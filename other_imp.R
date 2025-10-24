@@ -375,52 +375,52 @@ intPredict <- function(model, var){
 # # intGridNew1 <- marginaleffects::datagrid(newdata=ndGLM_scl,
 
 
-if(grepl("*", modList[top_num], fixed=TRUE)){ # the defaults are for this model
-  # change the grid used based on which variables are in the interaction:
-  if(intVar2 == "obs_int"){
-    # gr = intGridObs 
-    grName = "intGridObs"
-    lab = "Final interval - centered (days)"
-  } else {
-    # gr = intGridAge
-    grName = "intGridAge"
-    lab = "Nest age - centered (days)"
-  }
-
-  intPlot(impDat,                             # (interaction between species & nest_age)
-          # modnum=5)
-          modnum=top_num,
-          vars = c(intVar1, intVar2), # in this case, intVar1 should always be species
-          # grid1=gr,
-          grid1=get(grName),
-          x_lab=lab,
-          y_lab=yl)
-  # ,
-          # y_lab="Predicted probability of\n unknown field fate")                   
-}
-# g <- get(grName)
-# rm(g)
-
-if(grepl("*", modList[sec_top], fixed=TRUE)){
-  # if("obs_int" %in% c(intVar1.2, intVar2.2)){
-  if(intVar2.2 == "obs_int"){
-    # gr = intGridObs
-    grName = "intGridObs"
-    lab = "Final interval - centered (days)"
-  } else {
-    # gr = intGridAge
-    grName = "intGridAge"
-    lab = "Nest age - centered (days)"
-  }
-  
-  intPlot(impDat,
-            # modnum=4, 
-            modnum=sec_top, 
-            # grid1=gr, 
-            grid1=get(grName), 
-            # vars=c("species", "obs_int"), 
-            vars=c(intVar1.2, intVar2.2), 
-            x_lab=lab,
-          y_lab = yl)
-}
+# if(grepl("*", modList[top_num], fixed=TRUE)){ # the defaults are for this model
+#   # change the grid used based on which variables are in the interaction:
+#   if(intVar2 == "obs_int"){
+#     # gr = intGridObs 
+#     grName = "intGridObs"
+#     lab = "Final interval - centered (days)"
+#   } else {
+#     # gr = intGridAge
+#     grName = "intGridAge"
+#     lab = "Nest age - centered (days)"
+#   }
+# 
+#   intPlot(impDat,                             # (interaction between species & nest_age)
+#           # modnum=5)
+#           modnum=top_num,
+#           vars = c(intVar1, intVar2), # in this case, intVar1 should always be species
+#           # grid1=gr,
+#           grid1=get(grName),
+#           x_lab=lab,
+#           y_lab=yl)
+#   # ,
+#           # y_lab="Predicted probability of\n unknown field fate")                   
+# }
+# # g <- get(grName)
+# # rm(g)
+# 
+# if(grepl("*", modList[sec_top], fixed=TRUE)){
+#   # if("obs_int" %in% c(intVar1.2, intVar2.2)){
+#   if(intVar2.2 == "obs_int"){
+#     # gr = intGridObs
+#     grName = "intGridObs"
+#     lab = "Final interval - centered (days)"
+#   } else {
+#     # gr = intGridAge
+#     grName = "intGridAge"
+#     lab = "Nest age - centered (days)"
+#   }
+#   
+#   intPlot(impDat,
+#             # modnum=4, 
+#             modnum=sec_top, 
+#             # grid1=gr, 
+#             grid1=get(grName), 
+#             # vars=c("species", "obs_int"), 
+#             vars=c(intVar1.2, intVar2.2), 
+#             x_lab=lab,
+#           y_lab = yl)
+# }
 
