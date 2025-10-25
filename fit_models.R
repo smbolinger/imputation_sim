@@ -211,10 +211,10 @@ aic_mod <- function(mods){
   nestAIC <- tryCatch(
     {
       AICcmodavg::aictab(cand.set = mods, modnames = modEQ, sort = T) %>%
-        dplyr::mutate(df = .data$K-1) %>%
-        cat("k=", .data$K, "df=", .data$df) %>%
-        cat("; mod names=\n", paste(.data$Modnames, sep="\n")) %>%
-        dplyr::select(.data$Modnames, ,.data$AICc, .data$Delta_AICc, .data$df, .data$AICcWt, .data$LL)
+        dplyr::mutate(df = K-1) %>%
+        cat("k=", K, "df=", df) %>%
+        cat("; mod names=\n", paste(Modnames, sep="\n")) %>%
+        dplyr::select(Modnames, ,AICc, Delta_AICc, df, AICcWt, LL)
         # rename()
     },
     error=function(e){
@@ -222,7 +222,7 @@ aic_mod <- function(mods){
         cat("using bbmle; mod names=\n", paste(modEQ, sep="\n"))
         bbmle::AICctab(mods, weights=TRUE, logLik=TRUE, base=TRUE, nobs=121, mnames=modEQ) %>%
           as.data.frame() %>%
-          dplyr::select(.data$df, .data$AICc, .data$dAICc, .data$weight, .data$logLik, .data$dLogLik)
+          dplyr::select(df, AICc, dAICc, weight, logLik, dLogLik)
     }
   )
    AICtab <- nestAIC %>%
