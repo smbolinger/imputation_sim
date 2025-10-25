@@ -176,15 +176,34 @@ if(FALSE){
 
 # full versions with all comments (old code) in fate_GLM_imp_simulation.Rmd
 
-mkImpSim <- function(ampDat, resp, mod, vars, m=30, met="rf", fam=binomial, regMet="brglm_fit", iter=500, debug=FALSE){
-  imp <- mice::mice(ampDat, method=met, m=m, print=FALSE)
-  fit = with(imp,
-             glm( as.formula( paste0(resp, mod) ),
-                  family=fam,
-                  method = regMet,
-                  control=brglmControl(maxit=iter)
-  ))
-  
+mkImpSim <- function(ampDat, resp, mod, vars, m=30, met="rf", fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
+  imp <- mice::mice(ampDat, method=met, m=m, seed=seed, print=FALSE)
+    fit = with(imp,
+               glm( as.formula( paste0(resp, mod) ),
+                    family=fam,
+                    method = regMet,
+                    control=brglmControl(maxit=iter)
+    ))
+  # fits <- list()
+  # if (passive=="both" | passive=="no"){
+  #   fit = with(imp,
+  #              glm( as.formula( paste0(resp, mod) ),
+  #                   family=fam,
+  #                   method = regMet,
+  #                   control=brglmControl(maxit=iter)
+  #   ))
+  #   append(fits, fit)
+  # }
+  # if (passive=="both" | passive=="yes"){
+  #   fit = with(imp,
+  #              glm( as.formula( paste0(resp, mod) ),
+  #                   family=fam,
+  #                   method = regMet,
+  #                   control=brglmControl(maxit=iter)
+  #   ))
+  #   append(fits, fit)
+  # }
+  # if (debug) cat("length of fits:", length(fits))
   # pool[[m]] = summary(mice::pool(fit), "all", conf.int=TRUE)
   pool = summary(mice::pool(fit), "all", conf.int=TRUE)
   # why did I make impV?
@@ -228,7 +247,7 @@ if(FALSE){
 # for some reason, this can't find the global vars in fate_GLM1 when I knit that document.
 # so, pass them all as arguments? but they already are...
 # arguments: function to make sim data, real data, response, predictors, model, nruns
-runSim <- function(datNA, resp, vars, mod, mets, nruns=100, debug=FALSE){
+runSim <- function(datNA, resp, vars, mod, mets, nruns=100, seed=NULL, passive="both", debug=FALSE){
   
   res <- array(NA, dim = c(length(vars), length(mets), nruns, 4))
   # dimnames(res) <- list(c("pmm", "rf"),
@@ -252,7 +271,7 @@ runSim <- function(datNA, resp, vars, mod, mets, nruns=100, debug=FALSE){
     # if you include term in the mkImpSim output, as.matrix coerces all columns to character. 
     # need all num, so remove "term" before converting
       # vals <- as.matrix(mkImpSim(ampDat=datNA, resp=resp, vars=vars, mod=mod, met=x))
-      vals <- mkImpSim(ampDat=datNA, resp=resp, vars=vars, mod=mod, met=x, debug = debug)
+      vals <- mkImpSim(ampDat=datNA, resp=resp, vars=vars, mod=mod, met=x, seed=seed, debug = debug)
       vmatch <- match(vals[,1], rownames(res)) # col 1 of vals is the row names
       vals <- as.matrix(vals[,-1]) # remove chr column AFTER match so others aren't coerced to chr
       # for (v in vmatch){

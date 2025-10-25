@@ -17,6 +17,11 @@ imputeDat <- function(impDat1, m = 10, return = "complete"){
 #####################################################################################
 # Stratified multiple imputation (to deal with interactions)
 impStrat <- function(datNameImp, met, col_sel){
+  # If you don't edit the predictor matrix, get "logged events" where there are linear dependencies
+  # in this case, I think it's because is_u and HF_mis are correlated
+  dat <- get(datNameImp)
+  cat(">> predictor matrix for imputation of", datNameImp, ":\n")
+  print(mice::make.predictorMatrix(dat))
   # col_sel <- c(prVars, resp) # columns to select, as strings
   datLT <- get(datNameImp) %>% filter(species=="LETE") %>% select(all_of(col_sel))
   impLT <- mice::mice(datLT, seed=613, m=30, method=met, printFlag=FALSE)
@@ -30,6 +35,41 @@ impStrat <- function(datNameImp, met, col_sel){
   # imp_plot(impInt, plType = "density")
   # imp_plot(impInt, nest_age ~ fdate, plType="xy")
 }
+### other ways of dealing with interactions: 
+###   transform, then impute; 
+###   impute, then transform; 
+###   passive imputation; 
+###   smcfcs
+
+#### transform, then impute ############################################################
+
+# get(datNameImp) %>% select(species, cam_fate, fdate, obs_int, nest_age) %>% mice::md.pattern()
+# van Buuren found that transform, then impute gives more biased results unless you know your data are MCAR
+# 
+# # interaction with obs_int
+# imppDat1 <- get(datNameImp) %>% 
+#   mutate(species = as.numeric(species=="LETE"),
+#          sp_obsInt = species * obs_int) %>% 
+#   # select(species, cam_fate, fdate, nest_age, obs_int) 
+#   select(species, obs_int, cam_fate, fdate, nest_age, sp_obsInt) 
+# 
+# imppDat2 <- get(datNameImp) %>% 
+#   mutate(species = as.numeric(species=="LETE"),
+#          sp_age = species * nest_age) %>% 
+#   # select(species, cam_fate, fdate, nest_age, obs_int) 
+#   select(species, obs_int, cam_fate, fdate, nest_age, sp_age) 
+# # impDat       <- imputeDat(impDat1 = imppDat, m=100, return="")
+# # impDat2 <- impDat
+# # impDat  <- mice::mice(imppDat, seed=613, m=100, printFlag=FALSE)
+# # impDat  <- mice::mice(imppDat, seed=613, m=30, printFlag=FALSE)
+# impDat1  <- mice::mice(imppDat1, seed=613, m=30, printFlag=FALSE)
+# impDat2  <- mice::mice(imppDat2, seed=613, m=30, printFlag=FALSE)
+# 
+# impDat1$predictorMatrix
+# impDat2$predictorMatrix
+# May actually only require 25 imputations, but that will change all the numbers slightly (AIC
+# rankings stay the same)
+# impDat  <- mice::mice(imppDat, seed=613, m=25, printFlag=FALSE)
 
 #####################################################################################
 # fit the models using each of the m datasets
@@ -183,7 +223,6 @@ mdc <- function (r = "observed", s = "symbol", transparent = TRUE,
 # <bytecode: 0x000002913112cb68>
 #   <environment: namespace:mice>
 
-#####################################################################################
 #####################################################################################
 
 if(FALSE){
