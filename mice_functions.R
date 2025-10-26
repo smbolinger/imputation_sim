@@ -1,22 +1,29 @@
 
 ###  to perform the multiple imputations ###############################################
 
-imputeDat <- function(impDat1, m = 10, return = "complete"){
+# imputeDat <- function(impDat1, m = 10, return = "complete"){
+imputeDat <- function(datNameImp, met, seed, cols, m = 10, complete=FALSE, debug=FALSE){
   
-  # impDat1 <- get(datNameImp)
+  impDat1 <- get(datNameImp) %>% select(all_of(cols))
   # impDat  <- mice::mice(impDat1, seed=613, m=m, printFlag=FALSE)
-  impDat  <- mice::mice(impDat1, seed=613, method="rf", m=m, printFlag=FALSE)
+  impDat  <- mice::mice(impDat1, seed=seed, method=met, m=m, printFlag=FALSE)
+  saveRDS(impDat,"impDat.rds")
   impDat2 <- mice::complete(impDat, "all") # generate a list of all the completed datasets
+  saveRDS(impDat2, "impDat_complete.rds")
   
-  print(plot(impDat))
-  print(attributes(impDat))
+  if (debug) print(plot(impDat))
+  if (debug) print(attributes(impDat))
   
-  if(return=="complete") return(impDat2) else return(impDat)
+  # if(return=="complete") return(impDat2) else return(impDat)
+  if(complete) return(impDat2) else return(impDat)
 }
 
 #####################################################################################
+if(FALSE){
+  debug=TRUE
+}
 # Stratified multiple imputation (to deal with interactions)
-impStrat <- function(datNameImp, met, col_sel){
+impStrat <- function(datNameImp, met, col_sel, debug=FALSE){
   # If you don't edit the predictor matrix, get "logged events" where there are linear dependencies
   # in this case, I think it's because is_u and HF_mis are correlated
   dat <- get(datNameImp)
@@ -25,10 +32,17 @@ impStrat <- function(datNameImp, met, col_sel){
   # col_sel <- c(prVars, resp) # columns to select, as strings
   datLT <- get(datNameImp) %>% filter(species=="LETE") %>% select(all_of(col_sel))
   impLT <- mice::mice(datLT, seed=613, m=30, method=met, printFlag=FALSE)
+  if(debug) cat("logged events for LT:\n")
+  print(impLT$loggedEvents)
+  # if(debug) cat("visit sequence for LT:\n")
+  # print(impLT$visitSequence)
   
   datCO <- get(datNameImp) %>% filter(species=="CONI") %>% select(all_of(col_sel))
   impCO <- mice::mice(datCO, seed=613, m=30,method=met, printFlag=FALSE)
-  
+  if(debug) cat("logged events for CONI:\n")
+  print(impCO$loggedEvents)
+  if(debug) cat("visit sequence for CONI:\n")
+  print(impCO$visitSequence)
   # impInt <- mice::cbind(impLT, impCO)
   impInt <- mice::rbind(impLT, impCO)
 

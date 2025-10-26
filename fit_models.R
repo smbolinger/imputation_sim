@@ -315,13 +315,13 @@ tabRegr <- function(modNum, mods, resp,
 }
 
 ############## SAVE TABLES #################################################
-save_tab <- function(tab, dpi=(1800/6), dir, suffix="", rtf=FALSE){
+save_tab <- function(tabName, dpi=(1800/6), dir, suffix="", rtf=FALSE){
 
   now = format(Sys.time(), "_%m%d_%H%M%S") # seconds bc tables all generated in < 1 min
   nm       <- function(x) substitute(x)
   # dpi      <- (1800/6)                          # img width (px) / desired img width (in)
   if(rtf){
-    file_name <- paste0(nm(tab), now, suffix, ".rtf")
+    file_name <- paste0(nm(tab), suffix, now, ".rtf") # name of tab will always be tab within the function?
     gt::gtsave(tab, file_name, path=paste0(dir,"analysis/"))
   }
 

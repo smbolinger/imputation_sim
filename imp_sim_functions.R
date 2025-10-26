@@ -14,6 +14,7 @@ add_dummy <- function(dat, debug=FALSE){
   dat$speciesLETE <- ifelse(dat$species=="LETE", 1, 0)
   dat$speciesCONI <- ifelse(dat$species=="CONI", 1, 0)
   
+  # why did I get the columns in this way? I guess to reorder them?
   dat<- dat[, c("obs_int", "nest_age", "fdate", "HF_mis", "is_u", "speciesLETE", "speciesCONI")]
   # dat4amp <- cbind(dat4amp, dummy_vars, speciesLETE, speciesCONI)
   dat <- cbind(dat, dummy_vars)
@@ -62,6 +63,70 @@ add_fact <- function(dat, debug=FALSE){
 }
 
 ########################################################################################
+####### MAKE METHOD LIST #############################################################
+########################################################################################
+if(FALSE){
+  fateMet <- "pmm"
+  ageMet <- "pmm"
+  misMet <- "pmm"
+  resp <- "HF_mis"
+  col_sel[6] <- "HF_mis"
+  c<-col_sel[2]
+  met <- "rf"
+  met <- "caliber"
+}
+# mkMetList <- function(ageMet = "pmm", fateMet = "pmm", misMet = "pmm", resp=resp){
+# mkMetList <- function(met="pmm", resp=resp){
+# mkMetList <- function(mType, cols){
+# mkMetList <- function(metL, col_sel, debug=FALSE){
+mkMetList <- function(met, col_sel, debug=FALSE){
+  
+  # if (mType=="default"){
+  #   met=NULL
+  # } else if (mType=="cc"){
+  #   
+  # }
+  # names(dat4imp[])
+  # u<-names(colSums(is.na(dat4imp)))
+  metList <- rep("", 6)
+  # metList
+  names(metList) <- col_sel
+  # metList["cam_fate"] <- fateMet
+  # metList["nest_age"] <- ageMet
+  # metList["cam_fate"] <- met
+  # metList["nest_age"] <- met
+  
+  colNA <- names(dat4imp)[colSums(is.na(dat4imp)) > 0]
+  # if (resp %in% colNA) metList[resp] <- misMet
+  # metList[resp] <- ifelse(resp %in% colNA, misMet, "")
+  # metList[resp] <- ifelse(resp %in% colNA, met, "")
+
+  # if(met=="caliber"){
+  #   for(c in col_sel){
+  #     catList <- c("HF_mis", "cam_fate", "species", "is_u")
+  #     # if(c %in% catList ) metList[c] = "rfcat" 
+  #     if(c %in% catList ) metList[c] = "rfcat"
+  #   }
+  # }
+  for(c in col_sel){
+    if(met=="caliber"){
+      catList <- c("HF_mis", "cam_fate", "species", "is_u")
+      if(c %in% catList ) met1 = "rfcat" else met1 = "rfcont"
+    } else {met1 <- met}
+    
+    # print(met)
+  # for(c in cols){
+    # metList[c]<- ifelse(c %in% colNA, metL[c], "")
+    metList[c]<- ifelse(c %in% colNA, met1, "")
+  }
+  if(debug){
+    sprintf("methods for each variable (%s total):", length(metList))
+    print( metList)
+    }
+  return(metList)
+}
+
+########################################################################################
 ##### MAKE SIMULATED DATA ###############################################################
 ########################################################################################
 if (FALSE){
@@ -70,9 +135,11 @@ if (FALSE){
   convFact <- TRUE
 }
 
+# mkSimDat <- function(nd,col_sel, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
 mkSimDat <- function(nd, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
   if(method=="amp"){
     dat4amp <- add_dummy(nd, debug=TRUE)
+    # dat4amp <-nd %>% select(all_of(col_sel)) %>% add_dummy(debug=TRUE)
     # amp_out <- mice::ampute(dat4amp, run = FALSE)
     amp_out1 <- mice::ampute(dat4amp)
     
@@ -161,29 +228,88 @@ mkSimDat <- function(nd, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
 ##### IMPUTE/FIT/POOL SIM DATA ##########################################################
 ########################################################################################
 if(FALSE){
-  dat=mkSimDat(ndGLM_scl_cc, convFact = TRUE)$amp
+  # dat=mkSimDat(ndGLM_scl_cc, convFact = TRUE)$amp
+  ampDat=mkSimDat(ndGLM_scl_cc, convFact = TRUE)$amp
   resp="is_u"
   mod=modList[1]
   m=30
   met="rf"
+  met="default"
+  met="cc"
+  seed=61389
   fam=binomial
   regMet="brglm_fit"
   iter=500
+  # why only these vars?
   vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
   mod = modList[1]
-  ampDat <- datList$amp
+  # ampDat <- dat
+  # ampDat <- datList$amp
 }
 
 # full versions with all comments (old code) in fate_GLM_imp_simulation.Rmd
 
-mkImpSim <- function(ampDat, resp, mod, vars, m=30, met="rf", fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
-  imp <- mice::mice(ampDat, method=met, m=m, seed=seed, print=FALSE)
+# mkImpSim <- function(ampDat, resp, mod, vars, m=30, met="rf", fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
+# mkImpSim <- function(ampDat, resp, mod, vars, m=30, metList=rep("", 6),  fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
+# mkImpSim <- function(ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
+mkImpSim <- function(ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
+  # imp <- mice::mice(ampDat, method=met, m=m, seed=seed, print=FALSE)
+  # any(metList) == "rf"
+  # if (any(metList == "default")){
+  if (met!="cc"){
+    if (met=="default"){
+      if(debug) cat("\n\n>> default method\n")
+      # imp <- mice::mice(ampDat, m=m, seed=seed, print=FALSE)
+      imp <- mice::mice(ampDat, m=m, print=FALSE)
+    } else{
+      if (debug) cat("\n\n>> method:", met, "\n")
+      # metList <- mkMetList(met=met, cols=cols)
+      # metList <- mkMetList(met=met, col_sel=cols, debug=TRUE)
+      metList <- mkMetList(met=met, col_sel=cols, debug=debug)
+      # imp <- mice::mice(ampDat, method=metList, m=m, seed=seed, print=FALSE)
+      imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
+      # imp$blocks
+    }
+    
     fit = with(imp,
                glm( as.formula( paste0(resp, mod) ),
                     family=fam,
                     method = regMet,
                     control=brglmControl(maxit=iter)
     ))
+    pool = summary(mice::pool(fit), "all", conf.int=TRUE)
+    if(debug) {
+      cat("\n\n>> pooled model fit:\n")
+      print(pool)
+      str(pool)
+    }
+    pool <- pool %>% filter(term %in% vars)
+    ret = pool[, c("term", "estimate", "2.5 %", "97.5 %", "fmi")] # maybe do need term?
+  } else {
+    # dat <- ampDat[!is.na(ampDat),]
+    if(debug) cat("\n\n>> complete cases\n")
+    dat1 <- ampDat[complete.cases(ampDat),]
+    fit = glm(as.formula(paste0(resp, mod)), data=dat1, family=fam, method=regMet, control=brglmControl(maxit=iter))
+    ret <- cbind(coef(fit), confint(fit))
+    ret <- cbind(ret, rep(-1.0, length(coef(fit))))
+    ret <- data.frame(ret)
+    ret <- cbind(as.data.frame(names(coef(fit))), ret)
+    # this seems to make all the columns chr:
+    # ret <- data.frame(cbind(names(coef(fit)),coef(fit), confint(fit), rep(-1.0,length(coef(fit)))))
+    names(ret) <-c("term", "estimate", "2.5 %", "97.5 %", "fmi")
+    # ret <- data.frame(rbind(names(coef(fit)),coef(fit), confint(fit), rep(NA,length(coef(fit)))))
+    # str(ret)
+    # ret
+    # c<-coef(fit )
+    # c<-confint(fit)
+    # dimnames(ret)[[2]][1] <- "term"
+    # dimnames(ret)[[2]][2] <- "estimate"
+    # dimnames(ret)[[2]][5] <- "fmi"
+    # 
+    ret <- ret %>% filter(term %in% vars)
+    # dimnames(ret)
+  }
+  
   # fits <- list()
   # if (passive=="both" | passive=="no"){
   #   fit = with(imp,
@@ -205,25 +331,27 @@ mkImpSim <- function(ampDat, resp, mod, vars, m=30, met="rf", fam=binomial, regM
   # }
   # if (debug) cat("length of fits:", length(fits))
   # pool[[m]] = summary(mice::pool(fit), "all", conf.int=TRUE)
-  pool = summary(mice::pool(fit), "all", conf.int=TRUE)
+  # pool = summary(mice::pool(fit), "all", conf.int=TRUE)
   # why did I make impV?
   # impV = as.character(pool$term[pool$term %in% vars]) # don't need the levels
   # impV
   # pool <- pool[order(as.character(pool$term)),]
-  if(debug) {
-    cat("pooled model fit:\n")
-    print(pool)
-    str(pool)
-  }
+  # if(debug) {
+  #   cat("pooled model fit:\n")
+  #   print(pool)
+  #   str(pool)
+  # }
   # pool <- pool %>% filter(term %in% impV)
-  pool <- pool %>% filter(term %in% vars)
+  # pool <- pool %>% filter(term %in% vars)
   # pool
   # pool2
-  pool = pool[, c("term", "estimate", "2.5 %", "97.5 %", "fmi")] # maybe do need term?
+  # pool = pool[, c("term", "estimate", "2.5 %", "97.5 %", "fmi")] # maybe do need term?
   # don't need term? - term is the name in the matrix
   # pool = pool[, c("estimate", "2.5 %", "97.5 %", "fmi")]
   # pool
-  # return(pool)
+  if(debug) cat("\n\nret:\n")
+  if (debug) print(str(ret))
+  return(ret)
 }
 
 ########################################################################################
@@ -233,21 +361,29 @@ if(FALSE){
   nruns=10
   mod=modList[1]
   ndat=ndGLM_scl_cc
-  mets <- c("pmm", "rf")
+  mets <- c("default","pmm", "rf", "cart", "caliber","cc")
+  mets <- met_list
   # does not include the reference levels:
   vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
-  datNA <- dat
+  # datNA <- dat
   datNA <- ndGLM_scl_cc
+  debug=TRUE
+  datNA <- ampDat
+  # seed=82985
+  nruns=nrun
+
     r=1
     # m=1
     # x=1
     x = "rf"
+    x = met
 }
 
 # for some reason, this can't find the global vars in fate_GLM1 when I knit that document.
 # so, pass them all as arguments? but they already are...
 # arguments: function to make sim data, real data, response, predictors, model, nruns
-runSim <- function(datNA, resp, vars, mod, mets, nruns=100, seed=NULL, passive="both", debug=FALSE){
+# runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, seed=NULL, passive="both", debug=FALSE){
+runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, passive="both", debug=FALSE){
   
   res <- array(NA, dim = c(length(vars), length(mets), nruns, 4))
   # dimnames(res) <- list(c("pmm", "rf"),
@@ -257,23 +393,35 @@ runSim <- function(datNA, resp, vars, mod, mets, nruns=100, seed=NULL, passive="
                         as.character(1:nruns),
                         c("estimate", "2.5 %","97.5 %","fmi")
                         )
-  if(debug) cat("res matrix is formatted as follows:",str(res))
+  # if(debug) cat("res matrix is formatted as follows:",str(res))
+  if(debug) cat("res matrix is formatted as follows:\n")
+  if(debug) print(str(res))
+  datNA <- datNA %>% select(all_of(col_sel))
   for(r in 1:nruns){
     # ndat = nDat
     # if(missing(datNA)) datNA <- mkSimDat(ndat)
     # if the complete data was passed as an argument, add the NAs; otherwise, should be data with NA
-    if(all(colSums(is.na(datNA)) == 0)) datNA <- mkSimDat(datNA, debug = TRUE, convFact = TRUE)$amp
+    # if(all(colSums(is.na(datNA)) == 0)) datNA <- mkSimDat(datNA, debug = TRUE, convFact = TRUE)$amp
+    if(all(colSums(is.na(datNA)) == 0)) datNA <- mkSimDat(datNA, debug = debug, convFact = TRUE)$amp
     # datNA1 <- datNA
     # for(x in seq_along(mets)){
     for(x in mets){ # this makes it match by name, not just by index
+      if (debug) cat("method:", x)
       # could try using map to make sure the vars match up?
       # vals <- as.matrix(mkImpSim(dat=datNA, resp=resp, vars=vars, mod=mod, met=mets[m]))
     # if you include term in the mkImpSim output, as.matrix coerces all columns to character. 
     # need all num, so remove "term" before converting
       # vals <- as.matrix(mkImpSim(ampDat=datNA, resp=resp, vars=vars, mod=mod, met=x))
-      vals <- mkImpSim(ampDat=datNA, resp=resp, vars=vars, mod=mod, met=x, seed=seed, debug = debug)
+      # if (x == "default"){
+      #   vals <- mkImpSim(ampDat=datNA, resp=resp, vars=vars, mod=mod, metList=c("none"), seed=seed, debug = debug)
+      #   
+      # }
+      # metL <- mkMetList(met = x, cols = col_sel)
+      # vals <- mkImpSim(ampDat=datNA, resp=resp, vars=vars, mod=mod, metList=metL, seed=seed, debug = debug)
+      # vals <- mkImpSim(ampDat=datNA, cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, seed=seed, debug = debug)
+      vals <- mkImpSim(ampDat=datNA, cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, debug = debug)
       vmatch <- match(vals[,1], rownames(res)) # col 1 of vals is the row names
-      vals <- as.matrix(vals[,-1]) # remove chr column AFTER match so others aren't coerced to chr
+      vals <- as.matrix(vals[,-1]) # remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
       # for (v in vmatch){
       # }
       # res[vmatch, x, r,]  <- vals[,-1]
@@ -393,4 +541,29 @@ parAvg <- function(fullDat, impDat, resp, vars, mod, regMet="brglm_fit", fam=bin
   }
   return(bias)
   
+}
+
+test_avg <- function(simDatNA, fitReal){
+  # colMeans(simDatNA["cam_fateA", , , ])
+  cat(">> all 5 replicates for cam_fateA:\n\n")
+  print(simDatNA["cam_fateA", , , ])
+  cat(">> & colnames:\n\n")
+  print(colnames(simDatNA["cam_fateA", , , ]))
+  
+  cat("\n\n>> all replicates of estimate for cam_fateA & colnames & rownames:\n\n")
+  print(simDatNA["cam_fateA", , ,"estimate"])
+  print(colnames(simDatNA["cam_fateA", , , "estimate"]))
+  print(rownames(simDatNA["cam_fateA", , , "estimate"]))
+  
+  cat("\n\n>> averages of estimate from cam_fateA:\n\n")
+  print(rowMeans(simDatNA["cam_fateA", , , "estimate"]))
+  
+  # simDatNA["cam_fateA", , ,]
+  cat("\n\n>> all averages from cam_fateA:\n\n")
+  simDatAvg <- apply(simDatNA["cam_fateA", , ,], c(1,3), mean, na.rm=TRUE)
+  print(simDatAvg)
+  
+  cat("\n\n>> bias of estimate from cam_fateA:\n\n")
+  trueVal <- coef(fitReal)["cam_fateA"]
+  print(simDatAvg[,"estimate"] - trueVal)
 }
