@@ -79,7 +79,7 @@ if(FALSE){
 # mkMetList <- function(met="pmm", resp=resp){
 # mkMetList <- function(mType, cols){
 # mkMetList <- function(metL, col_sel, debug=FALSE){
-mkMetList <- function(met, col_sel, debug=FALSE){
+mkMetList <- function(met, dat, col_sel, debug=FALSE){
   
   # if (mType=="default"){
   #   met=NULL
@@ -89,6 +89,7 @@ mkMetList <- function(met, col_sel, debug=FALSE){
   # names(dat4imp[])
   # u<-names(colSums(is.na(dat4imp)))
   metList <- rep("", 6)
+  catList <- c("HF_mis", "cam_fate", "species", "is_u")
   # metList
   names(metList) <- col_sel
   # metList["cam_fate"] <- fateMet
@@ -96,7 +97,7 @@ mkMetList <- function(met, col_sel, debug=FALSE){
   # metList["cam_fate"] <- met
   # metList["nest_age"] <- met
   
-  colNA <- names(dat4imp)[colSums(is.na(dat4imp)) > 0]
+  colNA <- names(dat)[colSums(is.na(dat)) > 0]
   # if (resp %in% colNA) metList[resp] <- misMet
   # metList[resp] <- ifelse(resp %in% colNA, misMet, "")
   # metList[resp] <- ifelse(resp %in% colNA, met, "")
@@ -110,8 +111,12 @@ mkMetList <- function(met, col_sel, debug=FALSE){
   # }
   for(c in col_sel){
     if(met=="caliber"){
-      catList <- c("HF_mis", "cam_fate", "species", "is_u")
+      # catList <- c("HF_mis", "cam_fate", "species", "is_u")
       if(c %in% catList ) met1 = "rfcat" else met1 = "rfcont"
+    }else if(met %in% c("default.int", "pmm.int")){
+      met1 <- str_extract(met, pattern = "\\w+(?=.)") # everything up until the period
+    }else if(met == "passive.int"){
+      met1 <- ""
     } else {met1 <- met}
     
     # print(met)
@@ -229,20 +234,23 @@ mkSimDat <- function(nd, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
 ########################################################################################
 if(FALSE){
   # dat=mkSimDat(ndGLM_scl_cc, convFact = TRUE)$amp
-  ampDat=mkSimDat(ndGLM_scl_cc, convFact = TRUE)$amp
+  # ampDat=mkSimDat(ndGLM_scl_cc, convFact = TRUE)$amp
+  ampDat = sim_dat$amp
   resp="is_u"
   mod=modList[1]
   m=30
   met="rf"
   met="default"
   met="cc"
-  seed=61389
+  met = "caliber"
+  # seed=61389
   fam=binomial
   regMet="brglm_fit"
   iter=500
+  cols <- col_sel
   # why only these vars?
   vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
-  mod = modList[1]
+  # mod = modList[1]
   # ampDat <- dat
   # ampDat <- datList$amp
 }
@@ -252,43 +260,24 @@ if(FALSE){
 # mkImpSim <- function(ampDat, resp, mod, vars, m=30, met="rf", fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
 # mkImpSim <- function(ampDat, resp, mod, vars, m=30, metList=rep("", 6),  fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
 # mkImpSim <- function(ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
-mkImpSim <- function(ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
+mkImpSim <- function(fullDat, ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
   # imp <- mice::mice(ampDat, method=met, m=m, seed=seed, print=FALSE)
   # any(metList) == "rf"
   # if (any(metList == "default")){
-  if (met!="cc"){
-    if (met=="default"){
-      if(debug) cat("\n\n>> default method\n")
-      # imp <- mice::mice(ampDat, m=m, seed=seed, print=FALSE)
-      imp <- mice::mice(ampDat, m=m, print=FALSE)
-    } else{
-      if (debug) cat("\n\n>> method:", met, "\n")
-      # metList <- mkMetList(met=met, cols=cols)
-      # metList <- mkMetList(met=met, col_sel=cols, debug=TRUE)
-      metList <- mkMetList(met=met, col_sel=cols, debug=debug)
-      # imp <- mice::mice(ampDat, method=metList, m=m, seed=seed, print=FALSE)
-      imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
-      # imp$blocks
-    }
-    
-    fit = with(imp,
-               glm( as.formula( paste0(resp, mod) ),
-                    family=fam,
-                    method = regMet,
-                    control=brglmControl(maxit=iter)
-    ))
-    pool = summary(mice::pool(fit), "all", conf.int=TRUE)
-    if(debug) {
-      cat("\n\n>> pooled model fit:\n")
-      print(pool)
-      str(pool)
-    }
-    pool <- pool %>% filter(term %in% vars)
-    ret = pool[, c("term", "estimate", "2.5 %", "97.5 %", "fmi")] # maybe do need term?
-  } else {
+  ampDat <- ampDat %>% select(all_of(col_sel))
+  if (debug) cat("\n\n>>>> data to use for imputation:\n")
+  if (debug) print(str(ampDat))
+  int_true <- grepl(".int", met, fixed=TRUE) >0
+  # int_true <- grep("(<?=).", met, value=TRUE) == "int"
+  # if (met!="cc"){
+  # if (met %in% c("cc", "full")){
+  if (met == "cc"){
     # dat <- ampDat[!is.na(ampDat),]
-    if(debug) cat("\n\n>> complete cases\n")
+    if(debug) cat("\n\n>> method:\n", met)
+    # dat1 <- ifelse(met=="cc",ampDat[complete.cases(ampDat),],fullDat) # I forget why this makes a list
     dat1 <- ampDat[complete.cases(ampDat),]
+    if(debug) cat("\n\n>> data:\n")
+    if(debug) print(str(dat1))
     fit = glm(as.formula(paste0(resp, mod)), data=dat1, family=fam, method=regMet, control=brglmControl(maxit=iter))
     ret <- cbind(coef(fit), confint(fit))
     ret <- cbind(ret, rep(-1.0, length(coef(fit))))
@@ -307,7 +296,44 @@ mkImpSim <- function(ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, reg
     # dimnames(ret)[[2]][5] <- "fmi"
     # 
     ret <- ret %>% filter(term %in% vars)
+    # if(debug) cat("ret:\n")
+    # if(debug) print(str(ret))
     # dimnames(ret)
+  } else {
+    if (met=="default"){
+      if(debug) cat("\n\n>> default method\n")
+      # imp <- mice::mice(ampDat, m=m, seed=seed, print=FALSE)
+      imp <- mice::mice(ampDat, m=m, print=FALSE)
+    # } else if () {
+    } else {
+      if (debug) cat("\n\n>> method:", met, "\n")
+      # metList <- mkMetList(met=met, cols=cols)
+      # metList <- mkMetList(met=met, col_sel=cols, debug=TRUE)
+      metList <- mkMetList(met=met, dat=ampDat, col_sel=cols, debug=debug)
+      # imp <- mice::mice(ampDat, method=metList, m=m, seed=seed, print=FALSE)
+      imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
+      # imp$blocks
+    }
+    
+    if(debug) cat("\n>> fitting model")
+    fit = with(imp,
+               glm( as.formula( paste0(resp, mod) ),
+                    family=fam,
+                    method = regMet,
+                    control=brglmControl(maxit=iter)
+    ))
+    if(debug) cat("\n>> pooling model fit")
+    pool = summary(mice::pool(fit), "all", conf.int=TRUE)
+    # if(debug) {
+    #   cat("\n\n>> pooled model fit:\n")
+    #   print(pool)
+    #   str(pool)
+    # }
+    pool <- pool %>% filter(term %in% vars)
+    ret = pool[, c("term", "estimate", "2.5 %", "97.5 %", "fmi")] # maybe do need term?
+    
+    
+    
   }
   
   # fits <- list()
@@ -383,6 +409,7 @@ if(FALSE){
 # so, pass them all as arguments? but they already are...
 # arguments: function to make sim data, real data, response, predictors, model, nruns
 # runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, seed=NULL, passive="both", debug=FALSE){
+# runSim <- function(dat, datNA, col_sel, resp, vars, mod, mets, nruns=100, passive="both", debug=FALSE){
 runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, passive="both", debug=FALSE){
   
   res <- array(NA, dim = c(length(vars), length(mets), nruns, 4))
@@ -394,7 +421,7 @@ runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, passive="bo
                         c("estimate", "2.5 %","97.5 %","fmi")
                         )
   # if(debug) cat("res matrix is formatted as follows:",str(res))
-  if(debug) cat("res matrix is formatted as follows:\n")
+  if(debug) cat("\n\n>>>> res matrix is formatted as follows:\n")
   if(debug) print(str(res))
   datNA <- datNA %>% select(all_of(col_sel))
   for(r in 1:nruns){
@@ -406,7 +433,7 @@ runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, passive="bo
     # datNA1 <- datNA
     # for(x in seq_along(mets)){
     for(x in mets){ # this makes it match by name, not just by index
-      if (debug) cat("method:", x)
+      if (debug) cat("\n\n>>>> method:", x)
       # could try using map to make sure the vars match up?
       # vals <- as.matrix(mkImpSim(dat=datNA, resp=resp, vars=vars, mod=mod, met=mets[m]))
     # if you include term in the mkImpSim output, as.matrix coerces all columns to character. 
@@ -419,7 +446,8 @@ runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, passive="bo
       # metL <- mkMetList(met = x, cols = col_sel)
       # vals <- mkImpSim(ampDat=datNA, resp=resp, vars=vars, mod=mod, metList=metL, seed=seed, debug = debug)
       # vals <- mkImpSim(ampDat=datNA, cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, seed=seed, debug = debug)
-      vals <- mkImpSim(ampDat=datNA, cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, debug = debug)
+      # vals <- mkImpSim(fullDat=dat,ampDat=datNA, cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, debug = debug)
+      vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, debug = debug)
       vmatch <- match(vals[,1], rownames(res)) # col 1 of vals is the row names
       vals <- as.matrix(vals[,-1]) # remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
       # for (v in vmatch){
@@ -427,10 +455,10 @@ runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, passive="bo
       # res[vmatch, x, r,]  <- vals[,-1]
       res[vmatch, x, r,]  <- vals
       if(debug){ 
-        cat(sprintf("\noutput of mkImpSim for run %s and method %s:\n", r, x))
+        cat(sprintf("\n>> output of mkImpSim for run %s and method %s:\n", r, x))
         print(vals)
         str(vals)
-        cat("\nres matrix filled in:\n")
+        cat("\n>> res matrix filled in:\n")
         print(res[vmatch,x,r,])
         }
       # used x bc m already exists, so for testing it was confusing. doesn't matter once fxn works.
@@ -468,11 +496,11 @@ if(FALSE){
   dat[vars[v],,,"2.5 %"] < trueVals[vars[v]]
   dat[vars[v],,,"97.5 %"] > trueVals[vars[v]]
   rowMeans(dat[vars[v],,,"2.5 %"] < trueVals[vars[v]])
-  biasVals <- c("bias", "pctBias", "covRate", "avgWidth", "RMSE")
+  biasVals <- c("value","bias", "pctBias", "covRate", "avgWidth", "RMSE","SD")
   # trueVals <- data.frame(vars=vars, value=)
   fullDat <- ndGLM_scl_cc
   impDat  <- res1
-  impDat
+  impDat <- imp_sim
   trueVals
 }
 
@@ -487,16 +515,20 @@ parAvg <- function(fullDat, impDat, resp, vars, mod, regMet="brglm_fit", fam=bin
                  family=fam,
                  method=regMet,
                  control=brglmControl(maxit=iter) )
+  saveRDS(fitReal, "out/fitReal.rds")
   trueVals <- coef(fitReal)[vars] # the coefs have names associated with them
   # trueVals
   # }
 # mList <- modList[c(1, 8, 16)]
   # for (v in vars){ # v = var names, not indices
   # avg <- list()
+  # bias <- array(NA, dim = c(length(vars), length(mets), length(biasVals) ) )
+  # bias <- array(NA, dim = c(length(vars), length(mets) +1, length(biasVals) ) )
   bias <- array(NA, dim = c(length(vars), length(mets), length(biasVals) ) )
   
   dimnames(bias) <- list( sort(as.character(vars)),
                           # c("pmm", "rf", "cart"),
+                          # c("real",as.character(mets)),
                           as.character(mets),
                           as.character(biasVals)
   )
@@ -513,6 +545,7 @@ parAvg <- function(fullDat, impDat, resp, vars, mod, regMet="brglm_fit", fam=bin
     # avg <- apply(dat[vars[v], , ,], c(1,3), mean, na.rm=TRUE)
     # avg <- apply(impDat[v, , ,], c(1,3), mean, na.rm=TRUE)
     avg <- apply(impDat[v, , ,],MARGIN=c(1,3),FUN = mean, na.rm=TRUE)
+    sdev <- apply(impDat[v, , ,],MARGIN=c(1,3),FUN = sd, na.rm=TRUE)
     # impDat[v,1,,1]
     # impDat[]
     # mean(impDat[v,1,,1]) # this is the mean you are taking, but applied over all methods (dim 2) & parameters (dim 4)
@@ -526,18 +559,21 @@ parAvg <- function(fullDat, impDat, resp, vars, mod, regMet="brglm_fit", fam=bin
     # trueVals
     # true <- trueVals[vars[v]]
     true <- trueVals[v] # using v instead of vars[v] matches it by name
-    trueVals[v]
+    if(debug) cat("true param value:",trueVals[v])
     # true
     # bias[vars[v], , "bias"] <- avg[,"estimate"] - trueVals[vars[v]]
-    avg[,"estimate"]
+    bias[v, , "value"] <- avg[,"estimate"]
     bias[v, , "bias"] <- avg[,"estimate"] - true
+    # bias
+    # bias[v, , "bias"] <- rowMeans(impDat[v,,,"estimate"]) - true #should be equivalent to the line above
     bias[v, , "pctBias"] <- 100 * abs((avg[,"estimate"] - true) / true )
     # bias[vars[v], , "covRate"] <- avg[,"2.5 %"] < true & true > avg[,"97.5 %"]
     # bias[vars[v], , "avgWidth"] <- avg[,"97.5 %"] - avg[,"2.5 %"] 
     bias[v, , "covRate"] <- rowMeans(impDat[v,,,"2.5 %"] < true & true < impDat[v,,,"97.5 %"])
     bias[v, , "avgWidth"] <- avg[,"97.5 %"] - avg[,"2.5 %"] 
     bias[v, , "RMSE"] <- sqrt((avg[,"estimate"] - true)^2)
-    bias
+    bias[v, , "SD"] <- sdev[,"estimate"]
+    # bias
   }
   return(bias)
   

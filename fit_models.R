@@ -255,7 +255,7 @@ bic_mod <- function(mods){
   return(BICtab)
 }
 
-############## REGRESSION TABLE #################################################
+############## REGRESSION TABLE ##########################################
 tabRegr <- function(modNum, mods, resp,
                     vars=c('species', 'nest_age', 'obs_int', 'cam_fate', 'fdate'),
                     newNames=c('SPECIES', 'NEST_AGE', 'FINAL_INTERVAL', 'TRUE_FATE', 'END_DATE'),
@@ -314,22 +314,4 @@ tabRegr <- function(modNum, mods, resp,
   return( filename4)
 }
 
-############## SAVE TABLES #################################################
-save_tab <- function(tabName, dpi=(1800/6), dir, suffix="", rtf=FALSE){
 
-  now = format(Sys.time(), "_%m%d_%H%M%S") # seconds bc tables all generated in < 1 min
-  nm       <- function(x) substitute(x)
-  # dpi      <- (1800/6)                          # img width (px) / desired img width (in)
-  if(rtf){
-    file_name <- paste0(nm(tab), suffix, now, ".rtf") # name of tab will always be tab within the function?
-    gt::gtsave(tab, file_name, path=paste0(dir,"analysis/"))
-  }
-
-  file_name1 <- paste0(nm(tab), now, suffix, ".png")
-  gt::gtsave(tab, file_name1, path=paste0(dir,"analysis/"))
-
-  # file_name2 <- paste0(nm(tab), now, "_rounded.png")
-  # tab2 <- tab %>% fmt_number(decimals=2)
-  # gtsave(tab2, file_name2, path-"analysis/")
-  return(file_name1)
-}
