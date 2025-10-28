@@ -237,6 +237,7 @@ if(FALSE){
   # ampDat=mkSimDat(ndGLM_scl_cc, convFact = TRUE)$amp
   ampDat = sim_dat$amp
   resp="is_u"
+  resp = "HF_mis"
   mod=modList[1]
   m=30
   met="rf"
@@ -267,7 +268,7 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mod, vars, met, m=30, fam=bino
   ampDat <- ampDat %>% select(all_of(col_sel))
   if (debug) cat("\n\n>>>> data to use for imputation:\n")
   if (debug) print(str(ampDat))
-  int_true <- grepl(".int", met, fixed=TRUE) >0
+  # int_true <- grepl(".int", met, fixed=TRUE) >0
   # int_true <- grep("(<?=).", met, value=TRUE) == "int"
   # if (met!="cc"){
   # if (met %in% c("cc", "full")){
