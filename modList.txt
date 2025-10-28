@@ -1,0 +1,17 @@
+~ species * nest_age + obs_int + cam_fate + fdate
+~ species * nest_age + obs_int + cam_fate
+~ species * nest_age + obs_int + fdate
+~ species * nest_age + cam_fate + fdate
+~ species * nest_age + obs_int
+~ species * nest_age + cam_fate
+~ species * nest_age + fdate
+~ species * obs_int + nest_age + cam_fate + fdate
+~ species * obs_int + nest_age + cam_fate
+~ species * obs_int + nest_age + fdate
+~ species * obs_int + cam_fate + fdate
+~ species * obs_int + nest_age
+~ species * obs_int + cam_fate
+~ species * obs_int + fdate
+~ 1
+~ species + nest_age + obs_int + cam_fate + fdate
+~ species + nest_age + obs_int + cam_fate
