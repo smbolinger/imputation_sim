@@ -135,18 +135,23 @@ mkMetList <- function(met, dat, col_sel, debug=FALSE){
 ##### MAKE SIMULATED DATA ###############################################################
 ########################################################################################
 if (FALSE){
-  nd <- ndGLM_scl_cc
+  # nd <- ndGLM_scl_cc
+  nd <- dat4sim
   wt <- TRUE
   convFact <- TRUE
+  debug <- params$deb
 }
 
 # mkSimDat <- function(nd,col_sel, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
 mkSimDat <- function(nd, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
   if(method=="amp"){
-    dat4amp <- add_dummy(nd, debug=TRUE)
+    dat4amp <- add_dummy(nd, debug=debug)
+    # dat4amp <- as.numeric(dat4amp)
+    # dat4amp <- apply(dat4amp,MARGIN=2, FUN=function(x) as.numeric(x))
+    
     # dat4amp <-nd %>% select(all_of(col_sel)) %>% add_dummy(debug=TRUE)
     # amp_out <- mice::ampute(dat4amp, run = FALSE)
-    amp_out1 <- mice::ampute(dat4amp)
+    suppressWarnings(amp_out1 <- mice::ampute(dat4amp))
     
     new_patt <- amp_out1$patterns
     no_miss <- names(new_patt)[c(1, 3, 5:7)]
@@ -170,9 +175,9 @@ mkSimDat <- function(nd, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
     
     new_order <- c(is_miss, no_miss)
     if(debug) cat("\n\n>> reorder columns:", new_order)
-    dat4amp <- dat4amp %>% select(new_order) # reorder the columns to match the matrix
+    dat4amp <- dat4amp %>% select(all_of(new_order)) # reorder the columns to match the matrix
     
-    amp_out <- mice::ampute(dat4amp, prop = new_prop, patterns = miss_patt_mat, freq = patt_freq)
+    suppressWarnings(amp_out <- mice::ampute(dat4amp, prop = new_prop, patterns = miss_patt_mat, freq = patt_freq))
     if(debug) cat("\n\nCreate new missing values:\n")
     if(debug) print(mice::md.pattern(amp_out$amp, rotate.names = TRUE))
     # print(missing_tab("amp_out", prVars))
@@ -189,7 +194,7 @@ mkSimDat <- function(nd, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
       print(miss_patt_mat)
     }
     # what exactly are the weights doing?
-    amp_out_wt <- mice::ampute(dat4amp, prop = new_prop, patterns = miss_patt_mat, freq = patt_freq,weights = wts)
+    suppressWarnings(amp_out_wt <- mice::ampute(dat4amp, prop = new_prop, patterns = miss_patt_mat, freq = patt_freq,weights = wts))
     
     if(debug) cat("\n\nCreate more new missing values, with weighted probabilities:\n")
     if(debug)  print(mice::md.pattern(amp_out_wt$amp, rotate.names = TRUE))
@@ -200,10 +205,10 @@ mkSimDat <- function(nd, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
     
     # str(amp_out_wt)
     # amp_out_wt
-    str(datList$amp)
-    class(datList$amp)
-    class(datList)
-    if (convFact) datList$amp <- add_fact(dat = datList$amp, debug=TRUE)
+    if(debug) print(str(datList$amp))
+    if (debug) print(class(datList$amp))
+    # class(datList)
+    if (convFact) datList$amp <- add_fact(dat = datList$amp, debug=debug) # could probably reference the global debug instead...
     # levels(datList$amp$cam_fate)
     # str(datList)
     # datList
@@ -262,16 +267,10 @@ if(FALSE){
 # mkImpSim <- function(ampDat, resp, mod, vars, m=30, metList=rep("", 6),  fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
 # mkImpSim <- function(ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
 mkImpSim <- function(fullDat, ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
-  # imp <- mice::mice(ampDat, method=met, m=m, seed=seed, print=FALSE)
-  # any(metList) == "rf"
-  # if (any(metList == "default")){
-  ampDat <- ampDat %>% select(all_of(col_sel))
+  # ampDat <- ampDat %>% select(all_of(col_sel))
+  ampDat <- ampDat %>% select(all_of(cols))
   if (debug) cat("\n\n>>>> data to use for imputation:\n")
   if (debug) print(str(ampDat))
-  # int_true <- grepl(".int", met, fixed=TRUE) >0
-  # int_true <- grep("(<?=).", met, value=TRUE) == "int"
-  # if (met!="cc"){
-  # if (met %in% c("cc", "full")){
   if (met == "cc"){
     # dat <- ampDat[!is.na(ampDat),]
     if(debug) cat("\n\n>> method:\n", met)
@@ -393,7 +392,7 @@ if(FALSE){
   # does not include the reference levels:
   vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
   # datNA <- dat
-  datNA <- ndGLM_scl_cc
+  # datNA <- ndGLM_scl_cc
   debug=TRUE
   datNA <- ampDat
   # seed=82985
@@ -449,18 +448,19 @@ runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, passive="bo
       # vals <- mkImpSim(ampDat=datNA, cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, seed=seed, debug = debug)
       # vals <- mkImpSim(fullDat=dat,ampDat=datNA, cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, debug = debug)
       vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, debug = debug)
-      vmatch <- match(vals[,1], rownames(res)) # col 1 of vals is the row names
-      vals <- as.matrix(vals[,-1]) # remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
-      # for (v in vmatch){
-      # }
-      # res[vmatch, x, r,]  <- vals[,-1]
-      res[vmatch, x, r,]  <- vals
       if(debug){ 
         cat(sprintf("\n>> output of mkImpSim for run %s and method %s:\n", r, x))
-        print(vals)
+        print(vals) # before, had the var names...
+        vals
         str(vals)
+        }
+      vmatch <- match(vals[,1], rownames(res)) # col 1 of vals is the row names
+      vals <- as.matrix(vals[,-1]) # remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
+      res[vmatch, x, r,]  <- vals
+      if(debug){ 
         cat("\n>> res matrix filled in:\n")
-        print(res[vmatch,x,r,])
+        # print(res[vmatch,x,r,])
+        print(res[,x,r,])
         }
       # used x bc m already exists, so for testing it was confusing. doesn't matter once fxn works.
       # res[vmatch ,x,,]
@@ -482,8 +482,8 @@ if(FALSE){
 ###### GET AVERAGE BIAS ################################################################
 ########################################################################################
 if(FALSE){
-  dat=simDatNA
-  dat
+  # dat=simDatNA
+  dat=imp_sim
   fitReal <- glm(as.formula(paste0(resp, mod)), data=ndGLM_scl_cc, family=fam, method=regMet, control=brglmControl(maxit=iter) )
   coef(fitReal)
   trueVals <- coef(fitReal)[vars]
@@ -498,11 +498,25 @@ if(FALSE){
   dat[vars[v],,,"97.5 %"] > trueVals[vars[v]]
   rowMeans(dat[vars[v],,,"2.5 %"] < trueVals[vars[v]])
   biasVals <- c("value","bias", "pctBias", "covRate", "avgWidth", "RMSE","SD")
+  mets <- c("default","pmm", "rf", "cart", "caliber","cc")
   # trueVals <- data.frame(vars=vars, value=)
-  fullDat <- ndGLM_scl_cc
-  impDat  <- res1
+  # fullDat <- ndGLM_scl_cc
+  fullDat <- dat4sim 
+  # impDat  <- res1
   impDat <- imp_sim
   trueVals
+  v <- "cam_fateA"
+  impDat <- res
+  resp="is_u"
+  resp = "HF_mis"
+  mod=modList[1]
+  fam=binomial
+  regMet="brglm_fit"
+  iter=500
+  cols <- col_sel
+  # why only these vars?
+  vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
+  debug=TRUE
 }
 
 # parAvg <- function(dat, vars, mets, biasVals, trueVals){
