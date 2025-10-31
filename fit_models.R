@@ -262,6 +262,11 @@ tabRegr <- function(modNum, mods, resp,
                     suffix="",
                     debug=F){
   # browser()
+  if(FALSE){
+    modNum <- 5
+    vars=c('species', 'nest_age', 'obs_int', 'cam_fate', 'fdate')
+    newNames=c('SPECIES', 'NEST_AGE', 'FINAL_INTERVAL', 'TRUE_FATE', 'END_DATE')
+  }
   now = format(Sys.time(), "%m%d_%H%M%S") # seconds bc tables all generated in < 1 min
   nm       <- function(x) substitute(x)
   if (resp=="is_u"){
@@ -301,14 +306,14 @@ tabRegr <- function(modNum, mods, resp,
     gtsummary::as_gt() %>%
     # gt::tab_header(title=paste(question)) %>%
     gt::tab_header(title=headr) %>%
-    gt::gtsave(filename=filename3, path="analysis/", vwidth=1200, vheight=800)
+    gt::gtsave(filename=filename3, path=paste0(homeDir,"tables/"), vwidth=1200, vheight=800)
 
 
   tabOR %>%
     gtsummary::as_gt() %>%
     # gt::tab_header(title=paste(question)) %>%
     gt::tab_header(title=headr) %>%
-    gt::gtsave(filename=filename4, path="analysis/", vwidth=1200, vheight=800)
+    gt::gtsave(filename=filename4, path=paste0(homeDir,"tables/"), vwidth=1200, vheight=800)
 
   # return(tabOR)
   return( filename4)

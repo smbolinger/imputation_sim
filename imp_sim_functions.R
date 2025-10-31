@@ -244,7 +244,7 @@ if(FALSE){
   resp="is_u"
   resp = "HF_mis"
   mod=modList[1]
-  m=30
+  m=25
   met="rf"
   met="default"
   met="cc"
@@ -254,8 +254,10 @@ if(FALSE){
   regMet="brglm_fit"
   iter=500
   cols <- col_sel
+  debug = TRUE
   # why only these vars?
-  vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
+  # vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
+  vars <- var_list
   # mod = modList[1]
   # ampDat <- dat
   # ampDat <- datList$amp
@@ -266,7 +268,7 @@ if(FALSE){
 # mkImpSim <- function(ampDat, resp, mod, vars, m=30, met="rf", fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
 # mkImpSim <- function(ampDat, resp, mod, vars, m=30, metList=rep("", 6),  fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
 # mkImpSim <- function(ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
-mkImpSim <- function(fullDat, ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
+mkImpSim <- function(fullDat, ampDat, cols, resp, mod, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
   # ampDat <- ampDat %>% select(all_of(col_sel))
   ampDat <- ampDat %>% select(all_of(cols))
   if (debug) cat("\n\n>>>> data to use for imputation:\n")
@@ -375,8 +377,8 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mod, vars, met, m=30, fam=bino
   # don't need term? - term is the name in the matrix
   # pool = pool[, c("estimate", "2.5 %", "97.5 %", "fmi")]
   # pool
-  if(debug) cat("\n\nret:\n")
-  if (debug) print(str(ret))
+  # if(debug) cat("\n\nret:\n")
+  # if (debug) print(str(ret))
   return(ret)
 }
 
@@ -460,7 +462,8 @@ runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, passive="bo
       if(debug){ 
         cat("\n>> res matrix filled in:\n")
         # print(res[vmatch,x,r,])
-        print(res[,x,r,])
+        # print(res[,x,r,])
+        print(res[,,r,])
         }
       # used x bc m already exists, so for testing it was confusing. doesn't matter once fxn works.
       # res[vmatch ,x,,]
@@ -498,39 +501,51 @@ if(FALSE){
   dat[vars[v],,,"97.5 %"] > trueVals[vars[v]]
   rowMeans(dat[vars[v],,,"2.5 %"] < trueVals[vars[v]])
   biasVals <- c("value","bias", "pctBias", "covRate", "avgWidth", "RMSE","SD")
-  mets <- c("default","pmm", "rf", "cart", "caliber","cc")
+  # mets <- c("default","pmm", "rf", "cart", "caliber","cc")
   # trueVals <- data.frame(vars=vars, value=)
   # fullDat <- ndGLM_scl_cc
-  fullDat <- dat4sim 
   # impDat  <- res1
-  impDat <- imp_sim
-  trueVals
+  # trueVals
   v <- "cam_fateA"
-  impDat <- res
+  # impDat <- res
   resp="is_u"
   resp = "HF_mis"
-  mod=modList[1]
+  # mod=modList[1]
+  
+  
+  # if working from fateGLM_impsim.R:
+  resp = r
+  fullDat <- dat4sim 
+  impDat <- imp_sim
+  z=1
+  v="nest_age"
+  mod=mods4sim[z]
   fam=binomial
   regMet="brglm_fit"
   iter=500
   cols <- col_sel
   # why only these vars?
-  vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
+  # vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
+  biasVals = bias_names
+  mets = met_list
+  vars <- var_list
   debug=TRUE
 }
 
 # parAvg <- function(dat, vars, mets, biasVals, trueVals){
 # parAvg <- function(dat, resp, vars, mod, mets, biasVals, trueVals){
-parAvg <- function(fullDat, impDat, resp, vars, mod, regMet="brglm_fit", fam=binomial, iter=500, mets, biasVals, debug=FALSE){
+# parAvg <- function(fullDat, impDat, resp, vars, mod, regMet="brglm_fit", fam=binomial, iter=500, mets, biasVals, debug=FALSE){
+parAvg <- function(fullDat, impDat, resp, vars, modnum, regMet="brglm_fit", fam=binomial, iter=500, mets, biasVals, debug=FALSE){
   # trueVals is optional
   # if(missing(trueVals)){
+  mod     <- mods4sim[modnum]
   fitReal <- glm(as.formula(paste0(resp, mod)),
                  # data=ndGLM_scl_cc,
                  data=fullDat,
                  family=fam,
                  method=regMet,
                  control=brglmControl(maxit=iter) )
-  saveRDS(fitReal, "out/fitReal.rds")
+  saveRDS(fitReal, sprintf("out/fitReal_%s_m%s.rds", resp, modnum ))
   trueVals <- coef(fitReal)[vars] # the coefs have names associated with them
   # trueVals
   # }
@@ -561,6 +576,11 @@ parAvg <- function(fullDat, impDat, resp, vars, mod, regMet="brglm_fit", fam=bin
     # avg <- apply(impDat[v, , ,], c(1,3), mean, na.rm=TRUE)
     avg <- apply(impDat[v, , ,],MARGIN=c(1,3),FUN = mean, na.rm=TRUE)
     sdev <- apply(impDat[v, , ,],MARGIN=c(1,3),FUN = sd, na.rm=TRUE)
+    if(FALSE){
+      impDat[v,,,]
+      avg
+      sdev
+    }
     # impDat[v,1,,1]
     # impDat[]
     # mean(impDat[v,1,,1]) # this is the mean you are taking, but applied over all methods (dim 2) & parameters (dim 4)
@@ -574,7 +594,7 @@ parAvg <- function(fullDat, impDat, resp, vars, mod, regMet="brglm_fit", fam=bin
     # trueVals
     # true <- trueVals[vars[v]]
     true <- trueVals[v] # using v instead of vars[v] matches it by name
-    if(debug) cat("true param value:",trueVals[v])
+    # if(debug) cat("true param value:",trueVals[v])
     # true
     # bias[vars[v], , "bias"] <- avg[,"estimate"] - trueVals[vars[v]]
     bias[v, , "value"] <- avg[,"estimate"]
@@ -585,11 +605,25 @@ parAvg <- function(fullDat, impDat, resp, vars, mod, regMet="brglm_fit", fam=bin
     # bias[vars[v], , "covRate"] <- avg[,"2.5 %"] < true & true > avg[,"97.5 %"]
     # bias[vars[v], , "avgWidth"] <- avg[,"97.5 %"] - avg[,"2.5 %"] 
     bias[v, , "covRate"] <- rowMeans(impDat[v,,,"2.5 %"] < true & true < impDat[v,,,"97.5 %"])
-    bias[v, , "avgWidth"] <- avg[,"97.5 %"] - avg[,"2.5 %"] 
+    bias[v, , "avgWidth"] <- avg[,"97.5 %"] - avg[,"2.5 %"]
+    bias[v, , "avgWidth"] <- rowMeans(impDat[v,,,"97.5 %"] - impDat[v,,,"2.5 %"]) # gives the same output
     bias[v, , "RMSE"] <- sqrt((avg[,"estimate"] - true)^2)
     bias[v, , "SD"] <- sdev[,"estimate"]
+    if(FALSE){
+      true
+      # avg[,"2.5 %"]
+      # avg[,"97.5 %"]
+      # is value within avg confidence interval VS. how many times is it within the confidence interval out of all the runs
+      impDat[v,,,"2.5 %"]
+      impDat[v,,,"97.5 %"]
+      bias[v,,]
+    }
     # bias
   }
+  if(debug) cat("true param values:")
+  if(debug) print(trueVals)
+  if(debug) cat("\n\nbias values:\n")
+  if (debug) print(bias)
   return(bias)
   
 }
