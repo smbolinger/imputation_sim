@@ -645,6 +645,7 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
     # saveRDS(fitReal, sprintf("out/fitReal_%s_m%s.rds", resp, modnum ))
     
     now_dir = paste0(hdir, "out/", format(Sys.time(), "%d%b"))
+    cat("creating directory:", now_dir)
     # now_dir
     # if(!dir.exists(paste0(hdir, "out/now_"))) dir.create(paste0(hdir, "out/now_"))
     if(!dir.exists(now_dir)) dir.create(now_dir)
@@ -726,6 +727,7 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       if (debug) print(bias)
       # biasfile <- paste0(params$hdir, sprintf("%sout/bias_vals_%s_%s_%s_.rds", hdir,r, names(mods4sim)[z], suffix))
       # biasfile <-  sprintf("%sout/%s/bias_vals_%s_%s_%s_.rds", hdir,now_,r, names(mods4sim)[z], suffix)
+      cat(sprintf("saving bias values for: %s with response %s", names(mods4sim)[z], r))
       biasfile <-  sprintf("%s/bias_vals_%s_%s_%s.rds",now_dir,r, names(mods4sim)[z], suffix)
       # biasfile
       # saveRDS(bias_out, sprintf("out/bias_vals_%s_%s.rds",r, names(mods4sim)[z]))
