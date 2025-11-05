@@ -643,7 +643,12 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
                    method=regMet,
                    control=brglmControl(maxit=iter) )
     # saveRDS(fitReal, sprintf("out/fitReal_%s_m%s.rds", resp, modnum ))
-    saveRDS(fitReal, sprintf("%sout/fitReal_%s_m%s.rds", hdir, resp, z))
+    
+    now_dir = paste0(hdir, "out/", format(Sys.time(), "%d%b"))
+    # now_dir
+    # if(!dir.exists(paste0(hdir, "out/now_"))) dir.create(paste0(hdir, "out/now_"))
+    if(!dir.exists(now_dir)) dir.create(now_dir)
+    saveRDS(fitReal, sprintf("%s/fitReal_%s_m%s.rds", now_dir, resp, z))
     trueVals <- coef(fitReal)[vars] # the coefs have names associated with them
     # trueVals
     # }
@@ -678,6 +683,11 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       # avg
       sdev <- apply(impDat[v, , , ,],MARGIN=c(1,3),FUN = sd, na.rm=TRUE)
       if(FALSE){
+        impDat["nest_age", "default", , "estimate","m1"] 
+        impDat["nest_age",, , "estimate","m1"] 
+        impDat["nest_age", "default",1 , "estimate","m1"] <-  -2
+        impDat["nest_age", "pmm",2 , "estimate","m1"] <-  -2
+        # impDat["nest_age", "default", , "estimate","m1"] <- c(-2, -2, -2)
         impDat[v,,,,]
         avg
         sdev
@@ -715,10 +725,6 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       if(debug) cat("\n\nbias values:\n")
       if (debug) print(bias)
       # biasfile <- paste0(params$hdir, sprintf("%sout/bias_vals_%s_%s_%s_.rds", hdir,r, names(mods4sim)[z], suffix))
-      now_dir = paste0(hdir, "out/", format(Sys.time(), "%d%b"))
-      # now_dir
-      # if(!dir.exists(paste0(hdir, "out/now_"))) dir.create(paste0(hdir, "out/now_"))
-      if(!dir.exists(now_dir)) dir.create(now_dir)
       # biasfile <-  sprintf("%sout/%s/bias_vals_%s_%s_%s_.rds", hdir,now_,r, names(mods4sim)[z], suffix)
       biasfile <-  sprintf("%s/bias_vals_%s_%s_%s.rds",now_dir,r, names(mods4sim)[z], suffix)
       # biasfile
