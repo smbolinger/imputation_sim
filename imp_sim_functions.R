@@ -622,6 +622,7 @@ if(FALSE){
   mets = met_list
   vars <- var_list
   debug=TRUE
+  hdir <- params$hdir
 }
 
 # parAvg <- function(dat, vars, mets, biasVals, trueVals){
@@ -714,11 +715,18 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       if(debug) cat("\n\nbias values:\n")
       if (debug) print(bias)
       # biasfile <- paste0(params$hdir, sprintf("%sout/bias_vals_%s_%s_%s_.rds", hdir,r, names(mods4sim)[z], suffix))
-      biasfile <-  sprintf("%sout/bias_vals_%s_%s_%s_.rds", hdir,r, names(mods4sim)[z], suffix)
+      now_dir = paste0(hdir, "out/", format(Sys.time(), "%d%b"))
+      # now_dir
+      # if(!dir.exists(paste0(hdir, "out/now_"))) dir.create(paste0(hdir, "out/now_"))
+      if(!dir.exists(now_dir)) dir.create(now_dir)
+      # biasfile <-  sprintf("%sout/%s/bias_vals_%s_%s_%s_.rds", hdir,now_,r, names(mods4sim)[z], suffix)
+      biasfile <-  sprintf("%s/bias_vals_%s_%s_%s.rds",now_dir,r, names(mods4sim)[z], suffix)
+      # biasfile
       # saveRDS(bias_out, sprintf("out/bias_vals_%s_%s.rds",r, names(mods4sim)[z]))
       saveRDS(bias, biasfile)
       # biasfile1 <- paste0(params$hdir, sprintf("%sout/bias_vals_%s_%s_%s_.csv", hdir, r, names(mods4sim)[z], suffix))
-      biasfile1 <-  sprintf("%sout/bias_vals_%s_%s_%s_.csv", hdir, r, names(mods4sim)[z], suffix)
+      # biasfile1 <-  sprintf("%sout/%s/bias_vals_%s_%s_%s_.csv", hdir, now_, r, names(mods4sim)[z], suffix)
+      biasfile1 <-  sprintf("%s/bias_vals_%s_%s_%s.csv",now_dir,r, names(mods4sim)[z], suffix)
       write.csv(bias, file = biasfile1)# write to csv in case script aborts 
       if(FALSE){
         true
