@@ -501,6 +501,7 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,m=25, nruns=100, passi
   if(debug) cat("\n\n>>>> res matrix is formatted as follows:\n")
   if(debug) print(str(res))
   datNA <- datNA %>% select(all_of(col_sel))
+  cat(sprintf(">>> running simulation %s times", nruns))
   for(r in 1:nruns){
     # ndat = nDat
     # if(missing(datNA)) datNA <- mkSimDat(ndat)
@@ -645,10 +646,10 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
     # saveRDS(fitReal, sprintf("out/fitReal_%s_m%s.rds", resp, modnum ))
     
     now_dir = paste0(hdir, "out/", format(Sys.time(), "%d%b"))
-    cat("creating directory:", now_dir)
     # now_dir
     # if(!dir.exists(paste0(hdir, "out/now_"))) dir.create(paste0(hdir, "out/now_"))
     if(!dir.exists(now_dir)) dir.create(now_dir)
+    cat("\n>>> creating directory:", now_dir, "exists?", exists(now_dir))
     saveRDS(fitReal, sprintf("%s/fitReal_%s_m%s.rds", now_dir, resp, z))
     trueVals <- coef(fitReal)[vars] # the coefs have names associated with them
     # trueVals
@@ -727,7 +728,8 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       if (debug) print(bias)
       # biasfile <- paste0(params$hdir, sprintf("%sout/bias_vals_%s_%s_%s_.rds", hdir,r, names(mods4sim)[z], suffix))
       # biasfile <-  sprintf("%sout/%s/bias_vals_%s_%s_%s_.rds", hdir,now_,r, names(mods4sim)[z], suffix)
-      cat(sprintf("saving bias values for: %s with response %s", names(mods4sim)[z], r))
+      cat(sprintf("\n>>> saving bias values for model %s with response %s for variable %s", 
+                  names(mods4sim)[z], r, v))
       biasfile <-  sprintf("%s/bias_vals_%s_%s_%s.rds",now_dir,r, names(mods4sim)[z], suffix)
       # biasfile
       # saveRDS(bias_out, sprintf("out/bias_vals_%s_%s.rds",r, names(mods4sim)[z]))
