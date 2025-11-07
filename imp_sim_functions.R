@@ -29,7 +29,7 @@ add_dummy <- function(dat, debug=FALSE){
 if(FALSE){
   dat <-amp_out_wt$amp
 }
-add_fact <- function(dat, debug=FALSE){ 
+add_fact <- function(dat, facToNum=FALSE, debug=FALSE){ 
   # I already know what the dummy var names are in this case; not a general purpose function
   # dat <- amp_out$amp
   # if(is.list(dat)) dat <- dat$amp
@@ -43,18 +43,45 @@ add_fact <- function(dat, debug=FALSE){
                                 cam_fateF==1 ~ "F",
                                 cam_fateS==1 ~ "S",
                                 cam_fateD==1 ~ "D"),
-           species = if_else(speciesCONI==1, "CONI", "LETE")) %>%
-    mutate(across(c(cam_fate, species), as.factor))
+           species = if_else(speciesCONI==1, "CONI", "LETE"))
   
-  dat$cam_fate <- relevel(dat$cam_fate, "H")
+  if(facToNum){
+    dat <- dat %>%
+      rename(cfate = cam_fate,
+             spp   = species) %>%
+      mutate( cam_fate = case_match(as.character(cfate),
+                                "H"  ~ 0,
+                                "F"  ~ 1,
+                                "D"  ~ 2,
+                                "S"  ~ 3,
+                                "A"  ~ 4,
+                                "Hu" ~ 5,
+                                "Ca" ~ 6,
+                                "U"  ~ 7
+             ),
+             species = ifelse(spp=="LETE", 0, 1),
+             isu=as.character(is_u),
+             HFmis = as.character(HF_mis)
+             )
+  } else{
+    dat <- dat %>%
+      mutate(across(c(cam_fate, species), as.factor))
+    dat$cam_fate <- relevel(dat$cam_fate, "H")
+  }
   
-  rem_col <- c(3:8, 12,13)
-  # names(dat)[, c(3:8, 12,13)]
+  # rem_col <- c(3:8, 12,13)
+  rem_col <- na.omit(str_extract(string = names(dat), pattern = "cam_fate\\w+|species\\w+"))
+  # names(dat)[ c(3:8, 12,13)]
+  # names(dat)
   if (debug) cat("\n>> converted dummies to factors. all columns:\n", names(dat)) 
-  if (debug) cat("\n>> columns to remove:\n", names(dat)[rem_col])
+  # if (debug) cat("\n>> columns to remove:\n", names(dat)[rem_col])
+  if (debug) cat("\n>> columns to remove:\n", rem_col)
   
-  
-  dat <- dat[,-rem_col]
+  # dat <- 
+  # dat[-c("species")]
+  # dat[rem_col]
+  # dat <- dat[,-rem_col]
+  dat <- dat[,-which(names(dat) %in% rem_col)]
   return(dat)
   # there MUST be a shorter way to do this, using regex?
   # fate_letter <- str_extract_all(dat$)
@@ -140,10 +167,12 @@ if (FALSE){
   wt <- TRUE
   convFact <- TRUE
   debug <- params$deb
+  debug <- TRUE
+  facToNum <- TRUE
 }
 
 # mkSimDat <- function(nd,col_sel, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
-mkSimDat <- function(nd, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
+mkSimDat <- function(nd, facToNum=FALSE, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
   if(method=="amp"){
     dat4amp <- add_dummy(nd, debug=debug)
     # dat4amp <- as.numeric(dat4amp)
@@ -155,7 +184,7 @@ mkSimDat <- function(nd, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
     
     new_patt <- amp_out1$patterns
     no_miss <- names(new_patt)[c(1, 3, 5:7)]
-    is_miss <- names(new_patt)[-c(1,3,5:7)]
+    is_miss <- names(new_patt)[-c(1,3,5:7)] # Reve Coffee Lab in BR
     
     # the order: missing age only; missing fate/HF_mis only; missing both
     miss_pat <- list(c(0, rep(1,7)), c(1,rep(0,7)), c(rep(0,8)) )
@@ -208,7 +237,8 @@ mkSimDat <- function(nd, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
     if(debug) print(str(datList$amp))
     if (debug) print(class(datList$amp))
     # class(datList)
-    if (convFact) datList$amp <- add_fact(dat = datList$amp, debug=debug) # could probably reference the global debug instead...
+    if (convFact) datList$amp <- add_fact(dat = datList$amp, facToNum=facToNum, debug=debug) # could probably reference the global debug instead...
+    # datList$amp <- datList$amp %>%
     # levels(datList$amp$cam_fate)
     # str(datList)
     # datList
@@ -243,6 +273,8 @@ if(FALSE){
   ampDat = sim_dat$amp
   resp="is_u"
   resp = "HF_mis"
+  resp="isu"
+  resp = "HFmis"
   mod=modList[1]
   mods = mods4sim
   m=20
@@ -260,6 +292,7 @@ if(FALSE){
   # why only these vars?
   # vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
   vars <- var_list
+  fcToNum <- TRUE
   # mod = modList[1]
   # ampDat <- dat
   # ampDat <- datList$amp
@@ -271,10 +304,16 @@ if(FALSE){
 # mkImpSim <- function(ampDat, resp, mod, vars, m=30, metList=rep("", 6),  fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
 # mkImpSim <- function(ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
 # mkImpSim <- function(fullDat, ampDat, cols, resp, mod, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
+# mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, fcToNum=FALSE, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
 mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
   # ampDat <- ampDat %>% select(all_of(col_sel))
+  # if(fcToNum) cols[c(1:2)] <- c("spcs", "cfate") 
+  # if(fcToNum) cols[6] <- str_replace(cols[6], "_", "")
   ampDat <- ampDat %>% select(all_of(cols))
+  # %>% rename(species=spcs,
+  #                                                      cam_fate=cfate)
   ret    <- array(NA, dim=c(length(vars), 4, length(mods)))
+  
   dimnames(ret) <- list(vars, c( "estimate", "2.5 %", "97.5 %", "fmi"), names(mods))
   # ret
   # ret <- data.frame(array(0, dim=c( length(mods), 5 )))
@@ -344,6 +383,27 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, m=20, fam=bin
     # if(debug) print(str(ret))
     # dimnames(ret)
   } else {
+    
+    for(y in seq_along(mods)){
+      
+      if(grepl("*", mods[y], fixed=TRUE)){ # the defaults are for this model
+        # mods[y]
+        # pr <- vars[c(2:length(vars))]
+        # inter <- str_replace(str_extract(string=mods[y], pattern="\\w+\\s\\*\\s\\w+" ), pattern = "\\*", replacement = "\\:")
+        inters <- c(NA, NA)
+        inters[1] <- str_extract(mods[y], pattern="\\w+(?=\\\\*)")
+        inters[2] <- str_extract(mods[y], pattern="(?<=\\*\\s)\\w+")
+        mkfac <- function(x) paste0("factor(", x, ")")
+        # prPSFMI <- sapply(prVars, function(x) ifelse(x =="cam_fate", mkfac(x), x))
+        mod_form <- str_replace(mods[y], "cam_fate", "factor(cam_fate)")
+        mod_form <- str_replace_all(mod_form, "\\s(?=\\*)|(?<=\\*)\\s","") # need to replace all that match the "or" 
+        mod_form <- as.formula(paste(resp,mod_form))
+        # terms(mod_form) # this is the $ error - if it's not a formula class object
+        # inters <- sapply(X = inters, FUN = function(x) ifelse(x %in% c("species", "cam_fate"), mkfac(x), x))
+        
+        inter <- paste(inters[1], inters[2], sep=":")
+      }
+    }
     if (met=="default"){
       if(debug) cat("\n\n>> default method\n")
       # imp <- mice::mice(ampDat, m=m, seed=seed, print=FALSE)
@@ -352,6 +412,7 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, m=20, fam=bin
       imp <- mice::mice(ampDat, m=m, print=FALSE)
       if(debug) print(str(imp$imp))
       if(debug) print(plot(imp))
+      imp_comp <- mice::complete(imp,action="long") 
       # if(debug){
       #   imp40 <- mice.mids(imp, maxit=35, print=F)
       #   plot(imp40)
@@ -361,12 +422,15 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, m=20, fam=bin
       if (debug) cat("\n\n>> method:", met, "\n")
       # metList <- mkMetList(met=met, cols=cols)
       # metList <- mkMetList(met=met, col_sel=cols, debug=TRUE)
-      metList <- mkMetList(met=met, dat=ampDat, col_sel=cols, debug=debug)
+      # metList <- mkMetList(met=met, dat=ampDat, col_sel=cols, debug=debug)
+      metList <- mkMetList(met=met, dat=ampDat, col_sel=names(ampDat), debug=debug)
       # imp <- mice::mice(ampDat, method=metList, m=m, seed=seed, print=FALSE)
       if(debug) cat(sprintf("making %s imputed datasets", m))
       imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
-      if(debug) print(str(imp$imp))
+      # if(debug) print(str(imp$imp))
       if(debug) print(plot(imp))
+      # create one long dataframe of all imputed datasets stacked, so you have an "impVar" for ppsfmi
+      imp_comp <- mice::complete(imp,action="long") 
       # if(debug){
       #   imp40 <- mice.mids(imp, maxit=35, print=F)
       #   print(plot(imp40))
@@ -374,7 +438,62 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, m=20, fam=bin
       # imp$blocks
     }
     
-    for(y in seq_along(mods)){
+    # for(y in seq_along(mods)){
+    #   
+    #   if(grepl("*", mods[y], fixed=TRUE)){ # the defaults are for this model
+    #     # mods[y]
+    #     # pr <- vars[c(2:length(vars))]
+    #     # inter <- str_replace(str_extract(string=mods[y], pattern="\\w+\\s\\*\\s\\w+" ), pattern = "\\*", replacement = "\\:")
+    #     inters <- c(NA, NA)
+    #     inters[1] <- str_extract(mods[y], pattern="\\w+(?=\\\\*)")
+    #     inters[2] <- str_extract(mods[y], pattern="(?<=\\*\\s)\\w+")
+    #     mkfac <- function(x) paste0("factor(", x, ")")
+    #     # prPSFMI <- sapply(prVars, function(x) ifelse(x =="cam_fate", mkfac(x), x))
+    #     mod_form <- str_replace(mods[y], "cam_fate", "factor(cam_fate)")
+    #     mod_form <- str_replace_all(mod_form, "\\s(?=\\*)|(?<=\\*)\\s","") # need to replace all that match the "or" 
+    #     mod_form <- as.formula(paste(resp,mod_form))
+    #     # terms(mod_form) # this is the $ error - if it's not a formula class object
+    #     # inters <- sapply(X = inters, FUN = function(x) ifelse(x %in% c("species", "cam_fate"), mkfac(x), x))
+    #     
+    #     inter <- paste(inters[1], inters[2], sep=":")
+        # imp_comp <- imp_comp %>% 
+        #   mutate( cam_fate = case_match(as.character(cam_fate),
+        #                                              "H"  ~ 0,
+        #                                              "F"  ~ 1,
+        #                                              "D"  ~ 2,
+        #                                              "S"  ~ 3,
+        #                                              "A"  ~ 4,
+        #                                              "Hu" ~ 5,
+        #                                              "Ca" ~ 6,
+        #                                              "U"  ~ 7
+        #   ),
+        #   species = ifelse(species=="LETE", 0, 1)
+        #   )
+        # levels(imp_comp$cam_fate)
+        # levels(inters[2])
+        # psdat <- psfmi::lbpmilr
+        
+        # formula here requires categorical vars to be wrapped in factor([var])
+        # pool <- psfmi::psfmi_lr(data=imp_comp, nimp=m, impvar=".imp", formula=mods[y])
+        # this function thinks cam_fate has 2 levels, for some asinine reason??
+        # mod_form
+      #   pool <- psfmi::psfmi_lr( data=imp_comp, 
+      #                           # formula=mod_form, 
+      #                           nimp=m, 
+      #                           impvar=".imp", 
+      #                           Outcome=resp,
+      #                           # predictors=c("nest_age", "obs_int", "fdate"), 
+      #                           # predictors=c("species","nest_age", "obs_int", "fdate", "cam_fate"),
+      #                           predictors=c("species","nest_age", "obs_int", "fdate"),
+      #                           # predictors=c("spcs","nest_age", "obs_int", "fdate"),
+      #                           cat.predictors = c("cam_fate"),
+      #                           # cat.predictors = c("cfate"),
+      #                           int.predictors = inter,
+      #                           method="D1")
+      # }
+      if(FALSE){
+        pool$multiparm
+      }
       if(debug) cat("\n>> fitting model:", mods[y])
       fit = with(imp,
                  glm( as.formula( paste0(resp, mods[y]) ),
@@ -486,7 +605,7 @@ if(FALSE){
 # arguments: function to make sim data, real data, response, predictors, model, nruns
 # runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, seed=NULL, passive="both", debug=FALSE){
 # runSim <- function(dat, datNA, col_sel, resp, vars, mod, mets, nruns=100, passive="both", debug=FALSE){
-runSim <- function(datNA, col_sel, resp, vars, mods, mets,m=25, nruns=100, passive="both", debug=FALSE){
+runSim <- function(datNA, col_sel, resp, vars, mods, mets,fcToNum=FALSE,m=25, nruns=100, passive="both", debug=FALSE){
   
   res <- array(NA, dim = c(length(vars), length(mets), nruns, 4, length(mods)))
   # dimnames(res) <- list(c("pmm", "rf"),
@@ -507,7 +626,7 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,m=25, nruns=100, passi
     # if(missing(datNA)) datNA <- mkSimDat(ndat)
     # if the complete data was passed as an argument, add the NAs; otherwise, should be data with NA
     # if(all(colSums(is.na(datNA)) == 0)) datNA <- mkSimDat(datNA, debug = TRUE, convFact = TRUE)$amp
-    if(all(colSums(is.na(datNA)) == 0)) datNA <- mkSimDat(datNA, debug = debug, convFact = TRUE)$amp
+    if(all(colSums(is.na(datNA)) == 0)) datNA <- mkSimDat(datNA, debug = debug, convFact = TRUE, fcToNum=fcToNum)$amp
     # datNA1 <- datNA
     # for(x in seq_along(mets)){
     for(x in mets){ # this makes it match by name, not just by index
