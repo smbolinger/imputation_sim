@@ -98,15 +98,19 @@ if(FALSE){
   misMet <- "pmm"
   resp <- "HF_mis"
   col_sel[6] <- "HF_mis"
+  col_sel <- c(col_sel, "speciesLETE:is_u")
   c<-col_sel[2]
   met <- "rf"
   met <- "caliber"
+  met <- "passive"
+  dat <- ampDat
+  int <- NULL
 }
 # mkMetList <- function(ageMet = "pmm", fateMet = "pmm", misMet = "pmm", resp=resp){
 # mkMetList <- function(met="pmm", resp=resp){
 # mkMetList <- function(mType, cols){
 # mkMetList <- function(metL, col_sel, debug=FALSE){
-mkMetList <- function(met, dat, col_sel, debug=FALSE){
+mkMetList <- function(met, dat, col_sel, int=NULL, debug=FALSE){
   
   # if (mType=="default"){
   #   met=NULL
@@ -115,7 +119,8 @@ mkMetList <- function(met, dat, col_sel, debug=FALSE){
   # }
   # names(dat4imp[])
   # u<-names(colSums(is.na(dat4imp)))
-  metList <- rep("", 6)
+  # metList <- rep("", 6)
+  metList <- rep("",length(col_sel))
   catList <- c("HF_mis", "cam_fate", "species", "is_u")
   # metList
   names(metList) <- col_sel
@@ -125,6 +130,13 @@ mkMetList <- function(met, dat, col_sel, debug=FALSE){
   # metList["nest_age"] <- met
   
   colNA <- names(dat)[colSums(is.na(dat)) > 0]
+  is_num <- names(dat)[sapply(dat, is.numeric)]
+  # is_bin <- names(dat)[length(sapply(dat, levels))==2]
+  is_bin <- names(dat)[sapply(dat, function(x) length(levels(x)))==2]
+  is_cat <- names(dat)[sapply(dat, function(x) length(levels(x)))>2]
+  # is_num <- names(dat)[where(is.numeric(dat))]
+  # which(is.numeric(
+  
   # if (resp %in% colNA) metList[resp] <- misMet
   # metList[resp] <- ifelse(resp %in% colNA, misMet, "")
   # metList[resp] <- ifelse(resp %in% colNA, met, "")
@@ -136,20 +148,30 @@ mkMetList <- function(met, dat, col_sel, debug=FALSE){
   #     if(c %in% catList ) metList[c] = "rfcat"
   #   }
   # }
+  met2 <- ""
   for(c in col_sel){
     if(met=="caliber"){
       # catList <- c("HF_mis", "cam_fate", "species", "is_u")
       if(c %in% catList ) met1 = "rfcat" else met1 = "rfcont"
     }else if(met %in% c("default.int", "pmm.int")){
       met1 <- str_extract(met, pattern = "\\w+(?=.)") # everything up until the period
-    }else if(met == "passive.int"){
-      met1 <- ""
+    # }else if(met == "passive.int"){
+    }else if(met == "passive"){
+      # met1 <- ""
+      # met1 <- ifelse(is.numeric())
+      met1 <- case_when(c %in% is_num ~ "pmm",
+                         c %in% is_bin ~ "logreg",
+                         c %in% is_cat ~ "polyreg")
+      met2 <- paste("~I(", int,")")
     } else {met1 <- met}
     
     # print(met)
   # for(c in cols){
     # metList[c]<- ifelse(c %in% colNA, metL[c], "")
     metList[c]<- ifelse(c %in% colNA, met1, "")
+    # metList[c]<- ifelse(grepl(":", c,fixed = TRUE), met2, "")
+    # if(met=="passive" & grepl(":", c, fixed=TRUE)) metList[c] = met2 
+    if(grepl(":", c, fixed=TRUE)) metList[c] = met2 
   }
   if(debug){
     sprintf("methods for each variable (%s total):", length(metList))
@@ -319,9 +341,10 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, m=20, fam=bin
   # ret <- data.frame(array(0, dim=c( length(mods), 5 )))
   if (debug) cat("\n\n>>>> data to use for imputation:\n")
   if (debug) print(str(ampDat))
+  if(debug) cat(sprintf("\n>> making %s imputed datasets using", m))
   if (met == "cc"){
     # dat <- ampDat[!is.na(ampDat),]
-    if(debug) cat("\n\n>> complete-case analysis:\n")
+    if(debug) cat(" complete-case analysis:\n")
     # dat1 <- ifelse(met=="cc",ampDat[complete.cases(ampDat),],fullDat) # I forget why this makes a list
     dat1 <- ampDat[complete.cases(ampDat),]
     if(debug) cat("\n\n>> data:\n")
@@ -360,11 +383,13 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, m=20, fam=bin
         y=y+1
         names(coef(fit))
       }
+    }
+#######################################################################################
       # ret
         # vals
       # ret[,,y] <- as.matrix(vals)
       # as.matrix(vals)
-    }
+    # }
     # ret[,,y]
     # this seems to make all the columns chr:
     # ret <- data.frame(cbind(names(coef(fit)),coef(fit), confint(fit), rep(-1.0,length(coef(fit)))))
@@ -383,79 +408,104 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, m=20, fam=bin
     # if(debug) print(str(ret))
     # dimnames(ret)
   } else {
-    
     for(y in seq_along(mods)){
-      
-      if(grepl("*", mods[y], fixed=TRUE)){ # the defaults are for this model
-        # mods[y]
-        # pr <- vars[c(2:length(vars))]
-        # inter <- str_replace(str_extract(string=mods[y], pattern="\\w+\\s\\*\\s\\w+" ), pattern = "\\*", replacement = "\\:")
-        inters <- c(NA, NA)
-        inters[1] <- str_extract(mods[y], pattern="\\w+(?=\\\\*)")
-        inters[2] <- str_extract(mods[y], pattern="(?<=\\*\\s)\\w+")
-        mkfac <- function(x) paste0("factor(", x, ")")
-        # prPSFMI <- sapply(prVars, function(x) ifelse(x =="cam_fate", mkfac(x), x))
-        mod_form <- str_replace(mods[y], "cam_fate", "factor(cam_fate)")
-        mod_form <- str_replace_all(mod_form, "\\s(?=\\*)|(?<=\\*)\\s","") # need to replace all that match the "or" 
-        mod_form <- as.formula(paste(resp,mod_form))
-        # terms(mod_form) # this is the $ error - if it's not a formula class object
-        # inters <- sapply(X = inters, FUN = function(x) ifelse(x %in% c("species", "cam_fate"), mkfac(x), x))
-        
-        inter <- paste(inters[1], inters[2], sep=":")
-      }
-    }
     if (met=="default"){
-      if(debug) cat("\n\n>> default method\n")
+      # if(debug) cat("\n\n>> default method\n")
+      if(debug) cat(" default method:\n")
+      metList <- NULL
+      if(debug) cat("metList=", metList)
+#######################################################################################
       # imp <- mice::mice(ampDat, m=m, seed=seed, print=FALSE)
-      if(debug) cat(sprintf("making %s imputed datasets", m))
+      # if(debug) cat(sprintf("making %s imputed datasets", m))
       # imp <- mice::mice(ampDat, m=m, print=debug)
-      imp <- mice::mice(ampDat, m=m, print=FALSE)
-      if(debug) print(str(imp$imp))
-      if(debug) print(plot(imp))
-      imp_comp <- mice::complete(imp,action="long") 
+      # imp <- mice::mice(ampDat, m=m, print=FALSE)
+      # if(debug) print(str(imp$imp))
+      # if(debug) print(plot(imp))
+      # imp_comp <- mice::complete(imp,action="long") 
       # if(debug){
       #   imp40 <- mice.mids(imp, maxit=35, print=F)
       #   plot(imp40)
       # }
     # } else if () {
+    } else if(met=="passive"){
+      if(debug) cat(" passive imputation:\n")
+      # ampDat <- ampDat %>% 
+      ampDat[inter] <- prod(ampDat[inters]) # can't create a column this way?
+      prod(ampDat[inters]) 
+      ampDat[inters]
+      ampDat["nest_age"]
+      naa <- "nest_age"
+      ampDat[naa]
+    #   
+    # } else if (met=="strat"){
+    #       if(debug) cat(" stratify, then impute:\n")
     } else {
-      if (debug) cat("\n\n>> method:", met, "\n")
+      if (debug) cat(sprintf(" %s method:\n", met))
       # metList <- mkMetList(met=met, cols=cols)
       # metList <- mkMetList(met=met, col_sel=cols, debug=TRUE)
       # metList <- mkMetList(met=met, dat=ampDat, col_sel=cols, debug=debug)
       metList <- mkMetList(met=met, dat=ampDat, col_sel=names(ampDat), debug=debug)
+      if(grepl("*", mods[y], fixed=TRUE)){ # the defaults are for this model
+        # mods[y]
+        # pr <- vars[c(2:length(vars))]
+        # inter <- str_replace(str_extract(string=mods[y], pattern="\\w+\\s\\*\\s\\w+" ), pattern = "\\*", replacement = "\\:")
+        # inters <- c(NA, NA)
+        # inters[1] <- str_extract(mods[y], pattern="\\w+(?=\\\\*)")
+        # inters[2] <- str_extract(mods[y], pattern="(?<=\\*\\s)\\w+")
+        # #str_extract_all returns a list, even if there's only one item to extract from
+        # don't know if as.vector is necessary
+        inters <- sapply(mods[y], 
+                         function(x) as.vector(unlist( str_extract_all(x, "\\w+(?=\\s\\*)|(?<=\\*\\s)\\w+"))))
+        
+                         # function(x) str_extract_all(x, "\\w+(?=\\s\\*)|(?<=\\*\\s)\\w+")[[1]])
+        # inters <- inters[[1]]
+                         # function(x) unlist(str_extract_all(x, "\\w+(?=\\s\\*)|(?<=\\*\\s)\\w+")))
+                          # flatten keeps it a list, but not a nested list
+                         # function(x) flatten(str_extract_all(x, "\\w+(?=\\s\\*)|(?<=\\*\\s)\\w+")))
+        # ampDat$inter <- 
+          # prod(ampDat[inters])
+        # paste0("ampDat$",inters)
+        metList 
+        # mkfac <- function(x) paste0("factor(", x, ")")
+        # # prPSFMI <- sapply(prVars, function(x) ifelse(x =="cam_fate", mkfac(x), x))
+        # mod_form <- str_replace(mods[y], "cam_fate", "factor(cam_fate)")
+        # mod_form <- str_replace_all(mod_form, "\\s(?=\\*)|(?<=\\*)\\s","") # need to replace all that match the "or" 
+        # mod_form <- as.formula(paste(resp,mod_form))
+        # terms(mod_form) # this is the $ error - if it's not a formula class object
+        # inters <- sapply(X = inters, FUN = function(x) ifelse(x %in% c("species", "cam_fate"), mkfac(x), x))
+        
+        # inter <- paste(inters[1], inters[2], sep=":")
+        # inter <- paste(inters, collapse=":")
+        # inter <- paste(inters, collapse="*")
+        # vars<- c(vars, "inter")
+        # vars<- c(vars, inter)
+        # vars
+        # ampDat$inter <- prod(ampDat$inters)
+        # paste0("ampDat$",inters)
+          # )
+      }
       # imp <- mice::mice(ampDat, method=metList, m=m, seed=seed, print=FALSE)
-      if(debug) cat(sprintf("making %s imputed datasets", m))
-      imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
+      # if(debug) cat(sprintf("making %s imputed datasets", m))
+      # imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
+      if(FALSE){
+        imp <- mice::mice(ampDat, method=NULL, m=m, print=FALSE, seed=13)
+        imp_comp <- mice::complete(imp,action="long") 
+        imp2 <- mice::mice(ampDat, m=m, print=FALSE, seed=13)
+        imp_comp2 <- mice::complete(imp,action="long") 
+      }
+    }
+#######################################################################################
       # if(debug) print(str(imp$imp))
-      if(debug) print(plot(imp))
+      # if(debug) print(plot(imp))
       # create one long dataframe of all imputed datasets stacked, so you have an "impVar" for ppsfmi
-      imp_comp <- mice::complete(imp,action="long") 
+      # imp_comp <- mice::complete(imp,action="long") 
       # if(debug){
       #   imp40 <- mice.mids(imp, maxit=35, print=F)
       #   print(plot(imp40))
       # }
       # imp$blocks
-    }
+    # }
     
-    # for(y in seq_along(mods)){
-    #   
-    #   if(grepl("*", mods[y], fixed=TRUE)){ # the defaults are for this model
-    #     # mods[y]
-    #     # pr <- vars[c(2:length(vars))]
-    #     # inter <- str_replace(str_extract(string=mods[y], pattern="\\w+\\s\\*\\s\\w+" ), pattern = "\\*", replacement = "\\:")
-    #     inters <- c(NA, NA)
-    #     inters[1] <- str_extract(mods[y], pattern="\\w+(?=\\\\*)")
-    #     inters[2] <- str_extract(mods[y], pattern="(?<=\\*\\s)\\w+")
-    #     mkfac <- function(x) paste0("factor(", x, ")")
-    #     # prPSFMI <- sapply(prVars, function(x) ifelse(x =="cam_fate", mkfac(x), x))
-    #     mod_form <- str_replace(mods[y], "cam_fate", "factor(cam_fate)")
-    #     mod_form <- str_replace_all(mod_form, "\\s(?=\\*)|(?<=\\*)\\s","") # need to replace all that match the "or" 
-    #     mod_form <- as.formula(paste(resp,mod_form))
-    #     # terms(mod_form) # this is the $ error - if it's not a formula class object
-    #     # inters <- sapply(X = inters, FUN = function(x) ifelse(x %in% c("species", "cam_fate"), mkfac(x), x))
-    #     
-    #     inter <- paste(inters[1], inters[2], sep=":")
         # imp_comp <- imp_comp %>% 
         #   mutate( cam_fate = case_match(as.character(cam_fate),
         #                                              "H"  ~ 0,
@@ -490,10 +540,14 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, m=20, fam=bin
       #                           # cat.predictors = c("cfate"),
       #                           int.predictors = inter,
       #                           method="D1")
+      # if(FALSE){
+      #   pool$multiparm
       # }
-      if(FALSE){
-        pool$multiparm
-      }
+#######################################################################################
+      if(debug) cat(sprintf("making %s imputed datasets", m))
+      imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
+      if(debug) print(plot(imp))
+      imp_comp <- mice::complete(imp,action="long") 
       if(debug) cat("\n>> fitting model:", mods[y])
       fit = with(imp,
                  glm( as.formula( paste0(resp, mods[y]) ),
