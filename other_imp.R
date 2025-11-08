@@ -38,14 +38,19 @@ impStrat <- function(datNameImp, met=pmm, col_sel){
   # stratify by species
 # impStrat <- function(datNameImp, met){
   # col_sel <- c(prVars, resp) # columns to select, as strings
+  if(FALSE){
+    datNameImp <- "ampDat"
+    met <- metList
+  }
   datLT <- get(datNameImp) %>% filter(species=="LETE") %>% select(all_of(col_sel))
   impLT <- mice::mice(datLT, seed=613, m=30, method=met, printFlag=FALSE)
   
   datCO <- get(datNameImp) %>% filter(species=="CONI") %>% select(all_of(col_sel))
   impCO <- mice::mice(datCO, seed=613, m=30,method=met, printFlag=FALSE)
   
-  impInt <- mice::cbind(impLT, impCO)
+  # impInt <- mice::cbind(impLT, impCO)
   # impIntPMM <- mice::rbind(impLT, impCO)
+  impInt <- mice::rbind(impLT, impCO)
 
   # imp_plot(impInt, plType = "density")
   # imp_plot(impInt, nest_age ~ fdate, plType="xy")
