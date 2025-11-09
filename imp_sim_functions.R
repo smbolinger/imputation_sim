@@ -545,20 +545,20 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
       if(debug) cat(sprintf("\n>> making %s imputed datasets", m))
       if(met=="stratify"){
         # imp <- impStrat("ampDat", met = metList, col_sel = cols)
-        cat("stratified")
+        # cat("stratified")
         imp <- impStrat(ampDat, met = metList, col_sel = cols)
         imp$formulas
         # I don't think just passing the name really works (from the command line or 
         # another environment). can't find actual object
       } else if (met=="passive"){
         # imp <- mice::mice(ampDat, method=metList, m=m, pred=pre, maxit=10, print=FALSE)
-        cat("passive")
+        # cat("passive")
         imp <- mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)
       } else {
-        cat(met)
+        # cat(met)
         imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
       }
-      if(!is.null(imp$loggedEvents)) print(imp$loggedEvents)
+      if(xdebug & !is.null(imp$loggedEvents)) print(imp$loggedEvents)
       # if(xdebug){
       if(impplot){
         imp40 <- mice.mids(imp, maxit=35, print=F)
@@ -707,6 +707,7 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,par,fcToNum=FALSE){
   datNA <- datNA %>% select(all_of(col_sel))
   cat(sprintf(">>> running simulation %s times", nruns))
   for(r in 1:nruns){
+    cat(r)
     # ndat = nDat
     # if(missing(datNA)) datNA <- mkSimDat(ndat)
     # if the complete data was passed as an argument, add the NAs; otherwise, should be data with NA
@@ -764,6 +765,7 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,par,fcToNum=FALSE){
       # used x bc m already exists, so for testing it was confusing. doesn't matter once fxn works.
       # res[vmatch ,x,,]
       # res[,x,r,]
+      gc()
     }
     # res[, 1, r,] <- as.matrix(mkImpSim(dat=datNA, resp=resp, vars=vars, mod=mod, met="pmm"))
     # res[, 2, r,] <- as.matrix(mkImpSim(dat=datNA, resp=resp, vars=vars, mod=mod, met="rf"))
