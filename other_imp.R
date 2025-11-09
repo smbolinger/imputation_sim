@@ -34,7 +34,8 @@ regtab <- function(impDat, aicTabImp, modList, debug=FALSE){
   }
 
 #####################################################################################
-impStrat <- function(datNameImp, met=pmm, col_sel){
+# impStrat <- function(datNameImp, met=pmm, col_sel){
+impStrat <- function(datImp, met=pmm, col_sel){
   # stratify by species
 # impStrat <- function(datNameImp, met){
   # col_sel <- c(prVars, resp) # columns to select, as strings
@@ -42,10 +43,11 @@ impStrat <- function(datNameImp, met=pmm, col_sel){
     datNameImp <- "ampDat"
     met <- metList
   }
-  datLT <- get(datNameImp) %>% filter(species=="LETE") %>% select(all_of(col_sel))
+  # datLT <- get(datNameImp) %>% filter(species=="LETE") %>% select(all_of(col_sel))
+  datLT <- datImp %>% filter(species=="LETE") %>% select(all_of(col_sel))
   impLT <- mice::mice(datLT, seed=613, m=30, method=met, printFlag=FALSE)
   
-  datCO <- get(datNameImp) %>% filter(species=="CONI") %>% select(all_of(col_sel))
+  datCO <- datImp %>% filter(species=="CONI") %>% select(all_of(col_sel))
   impCO <- mice::mice(datCO, seed=613, m=30,method=met, printFlag=FALSE)
   
   # impInt <- mice::cbind(impLT, impCO)

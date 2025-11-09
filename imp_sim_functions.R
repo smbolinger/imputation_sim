@@ -195,7 +195,7 @@ mkMetList <- function(met, dat, col_sel, int=NULL, debug=FALSE){
     
   }
   if(debug){
-    sprintf("methods for each variable (%s total):", length(metList))
+    cat(sprintf("methods for each variable (%s total):\n", length(metList)))
     print( metList)
     }
   return(metList)
@@ -343,7 +343,7 @@ if(debugging){
   # met="default"
   # met="cc"
   # met = "caliber"
-  # met="passive"
+  met="passive"
   met = "stratify"
   mets <- met_list
   # seed=61389
@@ -353,6 +353,7 @@ if(debugging){
   iter=500
   cols <- col_list
   debug = TRUE
+  xdebug=TRUE
   y=1
   # why only these vars?
   # vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
@@ -370,22 +371,29 @@ if(debugging){
 # mkImpSim <- function(ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
 # mkImpSim <- function(fullDat, ampDat, cols, resp, mod, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
 # mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, fcToNum=FALSE, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
-mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
+# mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE, xdebug=FALSE){
+mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE, xdebug=FALSE, impplot=FALSE){
+# mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, par, fam=binomial, regMet="brglm_fit", iter=500, passive="both"){
   # ampDat <- ampDat %>% select(all_of(col_sel))
   # if(fcToNum) cols[c(1:2)] <- c("spcs", "cfate") 
   # if(fcToNum) cols[6] <- str_replace(cols[6], "_", "")
   # ampDat <- ampDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
   # %>% rename(species=spcs,
   #                                                      cam_fate=cfate)
+  # m=par$m
+  # # nruns=par$nrun
+  # debug = par$deb
+  # xdebug=par$xdeb
+  # ipl   = par$impPlot
   ret    <- array(NA, dim=c(length(vars), 4, length(mods)))
   
   dimnames(ret) <- list(vars, c( "estimate", "2.5 %", "97.5 %", "fmi"), names(mods))
   # ret
   # ret <- data.frame(array(0, dim=c( length(mods), 5 )))
-  if (debug) cat("\n\n>>>> data to use for imputation:\n")
+  # if (debug) cat("\n\n>>>> data to use for imputation:\n")
   # if (debug) print(str(ampDat))
-  if (debug) print(str(aDat))
-  if(debug) cat(sprintf("\n>> making %s imputed datasets using", m))
+  # if (debug) print(str(aDat))
+  # if(debug) cat(sprintf("\n>> making %s imputed datasets using", m))
   # browser()
   if (met == "cc"){
     
@@ -452,8 +460,8 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
     for(y in seq_along(mods)){
       #ampDat resets each time:
       ampDat <- aDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
-    if(debug) cat("\n\n>> data:\n")
-    if(debug) print(str(ampDat))
+    if(xdebug) cat("\n\n>> data:\n")
+    if(xdebug) print(str(ampDat))
       if(grepl("*", mods[y], fixed=TRUE)){ # the defaults are for this model
         # don't know if as.vector is necessary
         inters <- sapply(mods[y], 
@@ -463,6 +471,7 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
         
         inters <- inters[[1]]
         inter <- paste(inters, collapse=".")
+        inter2 <- paste(inters, collapse=":")
         # inters2 <- str_replace(inters, "species", "speciesCONI")
         # metList 
       }
@@ -470,60 +479,89 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
         # if(debug) cat("\n\n>> default method\n")
         if(debug & y==1) cat(" default method:\n")
         metList <- NULL
-        if(debug) cat("metList=", metList)
+        if(debug) cat("\n>>metList=", metList)
+        
       } else if(met=="passive"){
           if(debug & y==1) cat(" passive imputation:\n")
-          # ampDat <- ampDat %>% 
           # ampDat$speciesCONI <- ifelse(ampDat$species=="LETE", 0, 1)
-          ampDat$species <- ifelse(ampDat$species=="LETE", 0, 1)
-          # ampDat <- ampDat[[-c("species")]]
-          # ampDat <- subset(ampDat, select=names(ampDat)!="species")
-          # ampDat[inter] <- prod(ampDat[inters]) # can't create a column this way?
-          # prod(as.vector(ampDat[inters]) )# doesn't work
-          # new_col <- c()
-          ampDat[[inter]] <- Reduce(`*`, ampDat[inters])
-          # ampDat$species <- ifelse(ampDat$species==0, "LETE", "CONI")
-          # ampDat$species <- factor(ampDat$species, levels=c("LETE", "CONI") )
-          # was getting an error about how species doesn't exist.
-          # but if I make it a factor, get an error about how * isn't meaningful for factors?
-          # even though I already made the interaction column...
-          # but changing species to numeric is the only thing I can think that I did
-          # differently when met==passive, which is the only time I get the error about
-          # species not existing
-          # OK, so since the column is named species:nest_age, it gets added to the formula
-          # as an interaction between species and nest_age, but species doesn't have
-          # any missing values, so it's already been removed (see mice:::plot.mids function in mice_mids.R )
-          # since the interaction has already been calculated, just rename the column
-      
-          # it would be internally coded as speciesCONI if it were still a factor
-          # but I already made species a numeric variable, so it's still named "species"
-          # metList <- mkMetList(met=met, dat=ampDat, int=paste(inters2, collapse="*"),col_sel = names(ampDat), debug=debug)
+          # ampDat$species <- ifelse(ampDat$species=="LETE", 0, 1)
+          ### don't actually need to create the interaction column???
+          # ampDat[[inter]] <- Reduce(`*`, ampDat[inters])
+          ## see fate_GLM_notes.txt for why interaction is structured the way it is
+        
+          ### THIS HAS ALL (mostly) BEEN SUPERSEDED
+          ### USE formulas ARGUMENT
+          # ampDat[[inter]] <- NA
+            # cbind(ampDat, !!sym(inter)=NA)
+          # !!sym(inter)
+          # inImp <- mice::mice(ampDat, max=0, print=FALSE)
           
+          # inImp$formulas[5] <- paste(resp,mod)
+          # ff <- inImp$formulas
+          # tt <- terms(ff[[1]])
+          # str(tt)
+          # ff[[1]]
+          # # ff[[1]]$term.labels
+          # # ff[[1]].term.labels
+          # attr(ff[[1]], "term.labels")
+          # ff[1] # for update to work, this needs to be a model object
+          # stats::update(ff[1], ~ . + addInt)
+          # ff
+          # inImp$formulas <- lapply(inImp$formulas, function(x) inImp$formulas[x] <- paste(resp,mod))
+          # inImp$formulas <- lapply(inImp$formulas, function(x) x <- paste(resp,mod))
+          # newStr <- paste(inters,collapse=" * ")
+          # repStr <- paste(inters, collapse=" + ") # these aren't consecutive within the generated formulas
+          # str(inImp$formulas[2])
+          # ff <- inImp$formulas[2]
+          # class(ff[[1]])
+          # frmla <- lapply(inImp$formulas, function(x) as.formula(str_replace(as.character(x), repStr, newStr) ))
+          # frmla <- lapply(inImp$formulas, function(x) str_replace(as.character(x), repStr, newStr ))
+          addInt <- paste(" +", inter2, sep=" ")
+          # aa <- as.character(inImp$formulas[1])
+          # names(inImp$formulas[[1]])
+          # names(inImp$formulas)[1]
+          # frmla <- lapply(inImp$formulas, function(x) paste(as.character(x), paste("+", inter2, sep=" "), sep=" ") )
+          # frmla <- lapply(inImp$formulas,
+          #                 function(x) ifelse(names(x) %in% inters,
+          #                                    as.character(x),
+          #                                    paste(as.character(x,collapse=addInt,sep=" "))) )
+          frmla <- list(dim=c(length(ampDat)))
+          names(frmla) <- names(ampDat)
+          # n=1
+          ### I'll just make my own formulas instead of trying to update those....
+          ### updating them is such a headache
+          # for(n in seq_along(names(ampDat))){
+          if(xdebug) cat("mice formulas")
+          for(n in seq_along(names(ampDat))){
+          # for(n in names(ampDat)){
+            nm <- names(ampDat)[n]
+            rhside <- paste(names(ampDat)[-c(n)], collapse="+")
+            frmla[[n]] <- as.formula(paste(nm, rhside, sep="~"))
+            if(xdebug) print(frmla[[n]])
+          }
+          # # for(form in seq_along(inImp$formulas)){
+          # #   frmla[[form]] <- ifelse(names(inImp$formulas)[form] %in% inters,
+          # #                           as.character(inImp$formulas[form]),
+          # #                           paste(as.character(inImp$formulas[form]), addInt, sep=" "))
+          # for(form in seq_along(ff)){
+          #   frmla[[form]] <- ifelse(names(ff)[form] %in% inters,
+          #                           ff[form],
+          #                           paste(as.character(ff[form]), addInt, sep=" "))
+          # }
+          # names(frmla) <- names(ff)
+          # if(xdebug) cat("\nmice formulas:\n")
+          # if(xdebug) print(frmla)
+          # inImp$formulas <- sapply(inImp$formulas, paste(resp, mod))
+          
+          # pre <- inImp$pred
+          # # pre[c(inters), inter]
+          # pre[c(inters),inter] <- 0
           metList <- mkMetList(met=met, dat=ampDat, int=paste(inters, collapse="*"),col_sel = names(ampDat), debug=debug)
-          inImp <- mice::mice(ampDat, max=0, print=FALSE)
-          # inImp$pad$data
-          pre <- inImp$pred
-          # pre
-          # pre[inters]
-          # make new predictor matrix to prevent automatic removal (see van Buuren ch 6.4)
-          pre[c(inters),inter] <- 0
-          # pre[c("nest_age", "species")]
+          # imp <- mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)
           
-          # sads <- ampDat[inters]
-          # ampDat[inters]
-          # ampDat[c("nest_age", "cam_fate")]
-          # ampDat["nest_age"]
-          # naa <- "nest_age"
-          # ampDat[naa]
-        #   
-        # } else if (met=="strat"){
-        #       if(debug) cat(" stratify, then impute:\n")
       } else {
         if (debug & y==1) cat(sprintf(" %s method:\n", met))
         metList <- mkMetList(met=met, dat=ampDat, col_sel=names(ampDat), debug=debug)
-        # imp <- mice::mice(ampDat, method=metList, m=m, seed=seed, print=FALSE)
-        # if(debug) cat(sprintf("making %s imputed datasets", m))
-        # imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
         if(FALSE){
           imp <- mice::mice(ampDat, method=NULL, m=m, print=FALSE, seed=13)
           imp_comp <- mice::complete(imp,action="long") 
@@ -581,37 +619,43 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
       #   pool$multiparm
       # }
 #######################################################################################
-      if(debug) cat(sprintf("\n\n>> making %s imputed datasets", m))
+      if(debug) cat(sprintf("\n>> making %s imputed datasets", m))
       if(met=="stratify"){
-        imp <- impStrat("ampDat", met = metList, col_sel = cols)
+        # imp <- impStrat("ampDat", met = metList, col_sel = cols)
+        imp <- impStrat(ampDat, met = metList, col_sel = cols)
+        # I don't think just passing the name really works (from the command line or 
+        # another environment). can't find actual object
       } else if (met=="passive"){
-        imp <- mice::mice(ampDat, method=metList, m=m, pred=pre, maxit=10, print=FALSE)
+        # imp <- mice::mice(ampDat, method=metList, m=m, pred=pre, maxit=10, print=FALSE)
+        imp <- mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)
       } else {
         
         imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
-        if(debug){
-          imp40 <- mice.mids(imp, maxit=35, print=F)
-          # plot(imp40)
-          mice:::plot.mids(imp40)
-        }
-        # if(debug) print(plot(imp))
-        imp_comp <- mice::complete(imp,action="long") 
-        if(debug) cat("\n>> fitting model:", mods[y])
-        fit = with(imp,
-                   glm( as.formula( paste0(resp, mods[y]) ),
-                        family=fam,
-                        method = regMet,
-                        control=brglmControl(maxit=iter)
-        ))
-        if(debug) cat("\n>> pooling model fit")
-        # other pooling & related functions worth looking into:
-        # psfmi::psfmi_lr
-        # Hmisc:aRegImpute
-        pool = summary(mice::pool(fit), "all", conf.int=TRUE)
-        pool <- pool %>% filter(term %in% vars)
-        vmatch <- match(pool[,1], rownames(ret)) # col 1 of vals is the row names
-        ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %", "fmi")])
       }
+      if(!is.null(imp$loggedEvents)) print(imp$loggedEvents)
+      # if(xdebug){
+      if(impplot){
+        imp40 <- mice.mids(imp, maxit=35, print=F)
+        # plot(imp40)
+        mice:::plot.mids(imp40)
+      }
+      # if(debug) print(plot(imp))
+      imp_comp <- mice::complete(imp,action="long") 
+      if(debug) cat("\n>> fitting model:", mods[y])
+      fit = with(imp,
+                 glm( as.formula( paste0(resp, mods[y]) ),
+                      family=fam,
+                      method = regMet,
+                      control=brglmControl(maxit=iter)
+      ))
+      if(debug) cat("\n>> pooling model fit\n")
+      # other pooling & related functions worth looking into:
+      # psfmi::psfmi_lr
+      # Hmisc:aRegImpute
+      pool = summary(mice::pool(fit), "all", conf.int=TRUE)
+      pool <- pool %>% filter(term %in% vars)
+      vmatch <- match(pool[,1], rownames(ret)) # col 1 of vals is the row names
+      ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %", "fmi")])
       if(FALSE){
         rownames(ret)
         pool[,1]
@@ -713,7 +757,14 @@ if(FALSE){
 # arguments: function to make sim data, real data, response, predictors, model, nruns
 # runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, seed=NULL, passive="both", debug=FALSE){
 # runSim <- function(dat, datNA, col_sel, resp, vars, mod, mets, nruns=100, passive="both", debug=FALSE){
-runSim <- function(datNA, col_sel, resp, vars, mods, mets,fcToNum=FALSE,m=25, nruns=100, passive="both", debug=FALSE){
+# runSim <- function(datNA, col_sel, resp, vars, mods, mets,fcToNum=FALSE,m=25, nruns=100, passive="both", debug=FALSE, xdebug=FALSE){
+runSim <- function(datNA, col_sel, resp, vars, mods, mets,par,fcToNum=FALSE){
+   m=par$m
+   nruns=par$nrun
+   debug = par$deb
+   xdebug=par$xdeb
+   # ipl   = par$impPlot
+   ipl   = par$ipl
   
   res <- array(NA, dim = c(length(vars), length(mets), nruns, 4, length(mods)))
   # dimnames(res) <- list(c("pmm", "rf"),
@@ -738,7 +789,7 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,fcToNum=FALSE,m=25, nr
     # datNA1 <- datNA
     # for(x in seq_along(mets)){
     for(x in mets){ # this makes it match by name, not just by index
-      if (debug) cat("\n\n>>>> method:", x)
+      if (xdebug) cat("\n\n>>>> method:", x)
       # could try using map to make sure the vars match up?
       # vals <- as.matrix(mkImpSim(dat=datNA, resp=resp, vars=vars, mod=mod, met=mets[m]))
     # if you include term in the mkImpSim output, as.matrix coerces all columns to character. 
@@ -754,7 +805,7 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,fcToNum=FALSE,m=25, nr
       # vals <- mkImpSim(fullDat=dat,ampDat=datNA, cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, debug = debug)
       # vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, debug = debug)
       # vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, vars=vars, mods=mods, met=x, debug = debug,m = 75)
-      vals <- mkImpSim(aDat=datNA,cols=col_sel,resp=resp, vars=vars, mods=mods, met=x, debug = debug,m=m)
+      vals <- mkImpSim(aDat=datNA,cols=col_sel,resp=resp, vars=vars, mods=mods, met=x, debug = debug,m=m, xdebug=xdebug, impplot=ipl)
       if(FALSE){
         vals
         rownames(res)
@@ -769,7 +820,7 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,fcToNum=FALSE,m=25, nr
         res["nest_age", x, , "estimate","m1"] <- c(-2, -2, -2)
         res["nest_age", x, , "2.5 %","m1"] 
       }
-      if(debug){ 
+      if(xdebug){ 
         cat(sprintf("\n>> output of mkImpSim for all models for run %s and method %s:\n", r, x))
         str(vals)
         }
@@ -778,7 +829,7 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,fcToNum=FALSE,m=25, nr
       # vals <- as.matrix(vals[,-1]) # remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
       # dim(res[vmatch, x, r,,])  
       res[vmatch, x, r,,]  <- vals
-      if(debug){ 
+      if(xdebug){ 
         cat("\n>> res matrix filled in:\n")
         # print(res[vmatch,x,r,])
         # print(res[,x,r,])
@@ -857,7 +908,7 @@ if(FALSE){
 # parAvg <- function(dat, resp, vars, mod, mets, biasVals, trueVals){
 # parAvg <- function(fullDat, impDat, resp, vars, mod, regMet="brglm_fit", fam=binomial, iter=500, mets, biasVals, debug=FALSE){
 # parAvg <- function(fullDat, impDat, resp, vars, modnum, regMet="brglm_fit", fam=binomial, iter=500, mets, biasVals, debug=FALSE){
-parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", fam=binomial, iter=500, mets, biasVals, debug=FALSE){
+parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", fam=binomial, iter=500, mets, biasVals, debug=FALSE, xdebug=FALSE){
   # trueVals is optional
   # if(missing(trueVals)){
   # bias <- array(NA, dim = c(length(vars), length(mets), length(biasVals), length(mods) ) )
@@ -896,7 +947,7 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
                             as.character(biasVals),
                             names(mods)
     )
-    if (debug){
+    if (xdebug){
       cat("\n>> empty bias matrix:\n")
       print(bias) 
       cat("\n>> impDat:\n")
