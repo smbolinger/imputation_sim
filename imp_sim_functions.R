@@ -705,7 +705,7 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,par,fcToNum=FALSE){
   if(debug) cat("\n\n>>>> res matrix is formatted as follows:\n")
   if(debug) print(str(res))
   datNA <- datNA %>% select(all_of(col_sel))
-  cat(sprintf(">>> running simulation %s times", nruns))
+  cat(sprintf(">>> running simulation %s times\n", nruns))
   for(r in 1:nruns){
     cat(r)
     # ndat = nDat
