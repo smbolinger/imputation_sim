@@ -340,8 +340,8 @@ if(debugging){
   mods = mods4sim
   m=20
   # met="rf"
-  # met="default"
-  # met="cc"
+  met="default"
+  met="cc"
   # met = "caliber"
   met="passive"
   met = "stratify"
@@ -358,6 +358,7 @@ if(debugging){
   # why only these vars?
   # vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
   vars <- var_list
+  impplot = TRUE
   fcToNum <- TRUE
   # mod = modList[1]
   # ampDat <- dat
@@ -372,28 +373,14 @@ if(debugging){
 # mkImpSim <- function(fullDat, ampDat, cols, resp, mod, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
 # mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, fcToNum=FALSE, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
 # mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE, xdebug=FALSE){
+
+### Nest the loop inside the if statement so you aren't running the if check every loop?
+### 
 mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE, xdebug=FALSE, impplot=FALSE){
-# mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, par, fam=binomial, regMet="brglm_fit", iter=500, passive="both"){
-  # ampDat <- ampDat %>% select(all_of(col_sel))
-  # if(fcToNum) cols[c(1:2)] <- c("spcs", "cfate") 
-  # if(fcToNum) cols[6] <- str_replace(cols[6], "_", "")
-  # ampDat <- ampDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
-  # %>% rename(species=spcs,
-  #                                                      cam_fate=cfate)
-  # m=par$m
-  # # nruns=par$nrun
-  # debug = par$deb
-  # xdebug=par$xdeb
-  # ipl   = par$impPlot
   ret    <- array(NA, dim=c(length(vars), 4, length(mods)))
   
   dimnames(ret) <- list(vars, c( "estimate", "2.5 %", "97.5 %", "fmi"), names(mods))
   # ret
-  # ret <- data.frame(array(0, dim=c( length(mods), 5 )))
-  # if (debug) cat("\n\n>>>> data to use for imputation:\n")
-  # if (debug) print(str(ampDat))
-  # if (debug) print(str(aDat))
-  # if(debug) cat(sprintf("\n>> making %s imputed datasets using", m))
   # browser()
   if (met == "cc"){
     
@@ -432,36 +419,13 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
         names(coef(fit))
       }
     }
-#######################################################################################
-      # ret
-        # vals
-      # ret[,,y] <- as.matrix(vals)
-      # as.matrix(vals)
-    # }
-    # ret[,,y]
-    # this seems to make all the columns chr:
-    # ret <- data.frame(cbind(names(coef(fit)),coef(fit), confint(fit), rep(-1.0,length(coef(fit)))))
-    # names(ret) <-c("term", "estimate", "2.5 %", "97.5 %", "fmi")
-    # ret <- data.frame(rbind(names(coef(fit)),coef(fit), confint(fit), rep(NA,length(coef(fit)))))
-    # str(ret)
-    # ret
-    # c<-coef(fit )
-    # c<-confint(fit)
-    # dimnames(ret)[[2]][1] <- "term"
-    # dimnames(ret)[[2]][2] <- "estimate"
-    # dimnames(ret)[[2]][5] <- "fmi"
-    # 
-    # ret <- ret %>% filter(term %in% vars)
-    # if(debug) cat("ret:\n")
-    # if(debug) print(str(ret))
-    # dimnames(ret)
   } else {
     # ampDat <- aDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
     for(y in seq_along(mods)){
       #ampDat resets each time:
       ampDat <- aDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
-    if(xdebug) cat("\n\n>> data:\n")
-    if(xdebug) print(str(ampDat))
+    if(xdebug & y==1) cat("\n\n>> data:\n")
+    if(xdebug & y==1) print(str(ampDat))
       if(grepl("*", mods[y], fixed=TRUE)){ # the defaults are for this model
         # don't know if as.vector is necessary
         inters <- sapply(mods[y], 
@@ -483,55 +447,14 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
         
       } else if(met=="passive"){
           if(debug & y==1) cat(" passive imputation:\n")
-          # ampDat$speciesCONI <- ifelse(ampDat$species=="LETE", 0, 1)
-          # ampDat$species <- ifelse(ampDat$species=="LETE", 0, 1)
-          ### don't actually need to create the interaction column???
-          # ampDat[[inter]] <- Reduce(`*`, ampDat[inters])
-          ## see fate_GLM_notes.txt for why interaction is structured the way it is
-        
-          ### THIS HAS ALL (mostly) BEEN SUPERSEDED
-          ### USE formulas ARGUMENT
-          # ampDat[[inter]] <- NA
-            # cbind(ampDat, !!sym(inter)=NA)
-          # !!sym(inter)
-          # inImp <- mice::mice(ampDat, max=0, print=FALSE)
-          
-          # inImp$formulas[5] <- paste(resp,mod)
-          # ff <- inImp$formulas
-          # tt <- terms(ff[[1]])
-          # str(tt)
-          # ff[[1]]
-          # # ff[[1]]$term.labels
-          # # ff[[1]].term.labels
-          # attr(ff[[1]], "term.labels")
-          # ff[1] # for update to work, this needs to be a model object
-          # stats::update(ff[1], ~ . + addInt)
-          # ff
-          # inImp$formulas <- lapply(inImp$formulas, function(x) inImp$formulas[x] <- paste(resp,mod))
-          # inImp$formulas <- lapply(inImp$formulas, function(x) x <- paste(resp,mod))
-          # newStr <- paste(inters,collapse=" * ")
-          # repStr <- paste(inters, collapse=" + ") # these aren't consecutive within the generated formulas
-          # str(inImp$formulas[2])
-          # ff <- inImp$formulas[2]
-          # class(ff[[1]])
-          # frmla <- lapply(inImp$formulas, function(x) as.formula(str_replace(as.character(x), repStr, newStr) ))
-          # frmla <- lapply(inImp$formulas, function(x) str_replace(as.character(x), repStr, newStr ))
           addInt <- paste(" +", inter2, sep=" ")
-          # aa <- as.character(inImp$formulas[1])
-          # names(inImp$formulas[[1]])
-          # names(inImp$formulas)[1]
-          # frmla <- lapply(inImp$formulas, function(x) paste(as.character(x), paste("+", inter2, sep=" "), sep=" ") )
-          # frmla <- lapply(inImp$formulas,
-          #                 function(x) ifelse(names(x) %in% inters,
-          #                                    as.character(x),
-          #                                    paste(as.character(x,collapse=addInt,sep=" "))) )
-          frmla <- list(dim=c(length(ampDat)))
+          frmla <- vector("list", ncol(ampDat))
           names(frmla) <- names(ampDat)
           # n=1
           ### I'll just make my own formulas instead of trying to update those....
           ### updating them is such a headache
           # for(n in seq_along(names(ampDat))){
-          if(xdebug) cat("mice formulas")
+          if(xdebug) cat("\nmice formulas:\n")
           for(n in seq_along(names(ampDat))){
           # for(n in names(ampDat)){
             nm <- names(ampDat)[n]
@@ -622,14 +545,17 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
       if(debug) cat(sprintf("\n>> making %s imputed datasets", m))
       if(met=="stratify"){
         # imp <- impStrat("ampDat", met = metList, col_sel = cols)
+        cat("stratified")
         imp <- impStrat(ampDat, met = metList, col_sel = cols)
+        imp$formulas
         # I don't think just passing the name really works (from the command line or 
         # another environment). can't find actual object
       } else if (met=="passive"){
         # imp <- mice::mice(ampDat, method=metList, m=m, pred=pre, maxit=10, print=FALSE)
+        cat("passive")
         imp <- mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)
       } else {
-        
+        cat(met)
         imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
       }
       if(!is.null(imp$loggedEvents)) print(imp$loggedEvents)
