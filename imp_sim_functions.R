@@ -120,7 +120,8 @@ if(FALSE){
   int <- NULL
   int <- paste(inters, collapse="*")
 }
-mkMetList <- function(met, dat, col_sel, int=NULL, debug=FALSE){
+# mkMetList <- function(met, dat, col_sel, int=NULL, debug=FALSE){
+mkMetList <- function(met, dat, int=NULL, debug=FALSE){
   
   # if (mType=="default"){
   #   met=NULL
@@ -130,6 +131,8 @@ mkMetList <- function(met, dat, col_sel, int=NULL, debug=FALSE){
   # names(dat4imp[])
   # u<-names(colSums(is.na(dat4imp)))
   # metList <- rep("", 6)
+  ### colums in col_sel have already been selected
+  col_sel <- names(dat)
   metList <- rep("",length(col_sel))
   catList <- c("HF_mis", "cam_fate", "species", "is_u")
   # metList
@@ -178,11 +181,24 @@ mkMetList <- function(met, dat, col_sel, int=NULL, debug=FALSE){
     # print(met)
   # for(c in cols){
     # metList[c]<- ifelse(c %in% colNA, metL[c], "")
-    if(grepl(".", c, fixed=TRUE)){
-      metList[c] = paste("~I(", int,")") 
-    } else {
-      metList[c]<- ifelse(c %in% colNA, met1, "")
-    }
+    # if(grepl(".",c,fixed=T) & met=="passive"){
+    #   metList[c] <- paste("~I(",int,")")
+    # } else if 
+    # metList[c] <- ifelse((grepl(".",c,fixed=T) & met=="passive"), paste("~I(",int,")"), ifelse(c%in%colNA,met1,""))
+    interTrue <- ifelse((grepl(".",c,fixed=T)), TRUE, FALSE)
+    metList[c] <- case_when(interTrue & met=="passive" ~ paste("~I(",int,")"),
+                            interTrue & met !="passive" ~ NA,
+                            c=="inter" ~ NA,
+                            !interTrue & c%in%colNA ~ met1,
+                            .default = ""
+    
+                            )
+
+    # if(grepl(".", c, fixed=TRUE)){
+    #   metList[c] = paste("~I(", int,")") 
+    # } else {
+    #   metList[c]<- ifelse(c %in% colNA, met1, "")
+    # }
     # metList[c] <- ifelse(grepl(".", c, fixed=TRUE), paste("~I(", int,")"), metList[c])
     # metList[c]<- case_when(c %in% colNA  met1, "")
     # metList[c]<- ifelse(grepl(":", c,fixed = TRUE), met2, "")
@@ -345,7 +361,7 @@ if(debugging){
   # met="default"
   # met="cc"
   # met = "caliber"
-  # met="passive"
+  met="passive"
   # met = "stratify"
   mets <- met_list
   # seed=61389
@@ -370,8 +386,9 @@ if(debugging){
 # full versions with all comments (old code) in fate_GLM_imp_simulation.Rmd
 ### Nest the loop inside the if statement so you aren't running the if check every loop?
 ### 
-mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE, xdebug=FALSE, impplot=FALSE){
+mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE, xdebug=FALSE, impplot=FALSE){
   ret    <- array(NA, dim=c(length(vars), 3, length(mods)))
+  # metLists <- readRDS("met_lists.rds")
   
   # dimnames(ret) <- list(vars, c( "estimate", "2.5 %", "97.5 %", "fmi"), names(mods))
   dimnames(ret) <- list(vars, c( "estimate", "2.5 %", "97.5 %"), names(mods))
@@ -382,7 +399,7 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
     # dat <- ampDat[!is.na(ampDat),]
     if(debug) cat(" complete-case analysis:\n")
     # dat1 <- ifelse(met=="cc",ampDat[complete.cases(ampDat),],fullDat) # I forget why this makes a list
-    ampDat <- aDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
+    ampDat <- ampDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
     dat1 <- ampDat[complete.cases(ampDat),]
     
     if(debug) cat("\n\n>> data:\n")
@@ -418,151 +435,44 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
   } else {
     # ampDat <- aDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
     for(y in seq_along(mods)){
+      # if(grepl("*", mods[y], fixed=TRUE)){ # the defaults are for this model
+      #   inters <- sapply(mods[y],  function(x)  str_extract_all(x, "\\w+(?=\\s\\*)|(?<=\\*\\s)\\w+"))
+      #   inters <- inters[[1]]
+      #   inter <- paste(inters, collapse=".")
+      #   inter2 <- paste(inters, collapse=":")
+      # }
       #ampDat resets each time:
-      ampDat <- aDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
-    if(xdebug & y==1) cat("\n\n>> data:\n")
-    if(xdebug & y==1) print(str(ampDat))
-      if(grepl("*", mods[y], fixed=TRUE)){ # the defaults are for this model
-        # don't know if as.vector is necessary
-        inters <- sapply(mods[y], 
-                         # function(x) as.vector(unlist( str_extract_all(x, "\\w+(?=\\s\\*)|(?<=\\*\\s)\\w+"))))
-                         # function(x) unlist( str_extract_all(x, "\\w+(?=\\s\\*)|(?<=\\*\\s)\\w+")))
-                         function(x)  str_extract_all(x, "\\w+(?=\\s\\*)|(?<=\\*\\s)\\w+"))
-        
-        inters <- inters[[1]]
-        inter <- paste(inters, collapse=".")
-        inter2 <- paste(inters, collapse=":")
-        # inters2 <- str_replace(inters, "species", "speciesCONI")
-        # metList 
-      }
-      if (met=="default"){
-        # if(debug) cat("\n\n>> default method\n")
-        if(debug & y==1) cat(" default method:\n")
-        metList <- NULL
-        if(debug) cat("\n>>metList=", metList)
-        
-      } else if(met=="passive"){
-          if(debug & y==1) cat(" passive imputation:\n")
-          addInt <- paste(" +", inter2, sep=" ")
-          frmla <- vector("list", ncol(ampDat))
-          names(frmla) <- names(ampDat)
-          # n=1
-          ### I'll just make my own formulas instead of trying to update those....
-          ### updating them is such a headache
-          # for(n in seq_along(names(ampDat))){
-          if(xdebug) cat("\nmice formulas:\n")
-          for(n in seq_along(names(ampDat))){
-          # for(n in names(ampDat)){
-            nm <- names(ampDat)[n]
-            rhside <- paste(names(ampDat)[-c(n)], collapse="+")
-            frmla[[n]] <- as.formula(paste(nm, rhside, sep="~"))
-            if(xdebug) print(frmla[[n]])
-          }
-#######################################################################################
-          # # for(form in seq_along(inImp$formulas)){
-          # #   frmla[[form]] <- ifelse(names(inImp$formulas)[form] %in% inters,
-          # #                           as.character(inImp$formulas[form]),
-          # #                           paste(as.character(inImp$formulas[form]), addInt, sep=" "))
-          # for(form in seq_along(ff)){
-          #   frmla[[form]] <- ifelse(names(ff)[form] %in% inters,
-          #                           ff[form],
-          #                           paste(as.character(ff[form]), addInt, sep=" "))
-          # }
-          # names(frmla) <- names(ff)
-          # if(xdebug) cat("\nmice formulas:\n")
-          # if(xdebug) print(frmla)
-          # inImp$formulas <- sapply(inImp$formulas, paste(resp, mod))
-          
-          # pre <- inImp$pred
-          # # pre[c(inters), inter]
-          # pre[c(inters),inter] <- 0
-#######################################################################################
-          metList <- mkMetList(met=met, dat=ampDat, int=paste(inters, collapse="*"),col_sel = names(ampDat), debug=debug)
-          # imp <- mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)
-          
-      } else {
-        if (debug & y==1) cat(sprintf(" %s method:\n", met))
-        metList <- mkMetList(met=met, dat=ampDat, col_sel=names(ampDat), debug=debug)
-        if(FALSE){
-          imp <- mice::mice(ampDat, method=NULL, m=m, print=FALSE, seed=13)
-          imp_comp <- mice::complete(imp,action="long") 
-          imp2 <- mice::mice(ampDat, m=m, print=FALSE, seed=13)
-          imp_comp2 <- mice::complete(imp,action="long") 
+      # metL <- metLists[resp,,,y]
+      metL <- metLists[resp,,,y]
+      ampDat <- ampDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
+      # if(xdebug & y==1) cat("\n\n>> data:\n")
+      # if(xdebug & y==1) print(str(ampDat))
+      metList <- ifelse(met=="default", NULL, na.omit(metL[,met]))
+      cat(met, metList)
+      rm(metL)
+      # don't need the if statement?
+      inters <- sapply(mods[y],  function(x)  str_extract_all(x, "\\w+(?=\\s\\*)|(?<=\\*\\s)\\w+"))[[1]]
+      if (met=="passive") {
+        ampDat[[inter]] <- paste(inters, collapse=".")
+        addInt <- paste(" +", inter2, sep=" ")
+        frmla <- vector("list", ncol(ampDat))
+        names(frmla) <- names(ampDat)
+        if(xdebug) cat("\nmice formulas:\n")
+        for(n in seq_along(names(ampDat))){
+        # for(n in names(ampDat)){
+          nm <- names(ampDat)[n]
+          rhside <- paste(names(ampDat)[-c(n)], collapse="+")
+          frmla[[n]] <- as.formula(paste(nm, rhside, sep="~"))
+          # if(xdebug) print(frmla[[n]])
         }
       }
-#######################################################################################
-      # if(debug) print(str(imp$imp))
-      # if(debug) print(plot(imp))
-      # create one long dataframe of all imputed datasets stacked, so you have an "impVar" for ppsfmi
-      # imp_comp <- mice::complete(imp,action="long") 
-      # if(debug){
-      #   imp40 <- mice.mids(imp, maxit=35, print=F)
-      #   print(plot(imp40))
-      # }
-      # imp$blocks
-    # }
-    
-        # imp_comp <- imp_comp %>% 
-        #   mutate( cam_fate = case_match(as.character(cam_fate),
-        #                                              "H"  ~ 0,
-        #                                              "F"  ~ 1,
-        #                                              "D"  ~ 2,
-        #                                              "S"  ~ 3,
-        #                                              "A"  ~ 4,
-        #                                              "Hu" ~ 5,
-        #                                              "Ca" ~ 6,
-        #                                              "U"  ~ 7
-        #   ),
-        #   species = ifelse(species=="LETE", 0, 1)
-        #   )
-        # levels(imp_comp$cam_fate)
-        # levels(inters[2])
-        # psdat <- psfmi::lbpmilr
-        
-        # formula here requires categorical vars to be wrapped in factor([var])
-        # pool <- psfmi::psfmi_lr(data=imp_comp, nimp=m, impvar=".imp", formula=mods[y])
-        # this function thinks cam_fate has 2 levels, for some asinine reason??
-        # mod_form
-      #   pool <- psfmi::psfmi_lr( data=imp_comp, 
-      #                           # formula=mod_form, 
-      #                           nimp=m, 
-      #                           impvar=".imp", 
-      #                           Outcome=resp,
-      #                           # predictors=c("nest_age", "obs_int", "fdate"), 
-      #                           # predictors=c("species","nest_age", "obs_int", "fdate", "cam_fate"),
-      #                           predictors=c("species","nest_age", "obs_int", "fdate"),
-      #                           # predictors=c("spcs","nest_age", "obs_int", "fdate"),
-      #                           cat.predictors = c("cam_fate"),
-      #                           # cat.predictors = c("cfate"),
-      #                           int.predictors = inter,
-      #                           method="D1")
-      # if(FALSE){
-      #   pool$multiparm
-      # }
-#######################################################################################
-      if(debug) cat(sprintf("\n>> making %s imputed datasets", m))
-      if(met=="stratify"){
-        # imp <- impStrat("ampDat", met = metList, col_sel = cols)
-        # cat("stratified")
-        imp <- impStrat(ampDat, met = metList, col_sel = cols)
-        imp$formulas
-        # I don't think just passing the name really works (from the command line or 
-        # another environment). can't find actual object
-      } else if (met=="passive"){
-        # imp <- mice::mice(ampDat, method=metList, m=m, pred=pre, maxit=10, print=FALSE)
-        # cat("passive")
-        imp <- mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)
-      } else {
-        # cat(met)
-        imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
-      }
-      if(debug & !is.null(imp$loggedEvents)) print(imp$loggedEvents)
-      # if(xdebug){
+      imp <- case_when( met=="stratify" ~ impStrat(ampDat, met = metList, col_sel = cols),
+                        met=="passive" ~ mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE),
+                        .default = mice::mice(ampDat, method=metList, m=m, print=FALSE)
+      )
       if(impplot){
         visImp(imp)
       }
-      # if(debug) print(plot(imp))
-      # imp_comp <- mice::complete(imp,action="long") 
       if(debug) cat("\n>> fitting model:", mods[y])
       fit = with(imp,
                  glm( as.formula( paste0(resp, mods[y]) ),
@@ -571,29 +481,195 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
                       control=brglmControl(maxit=iter)
       ))
       if(debug) cat("\n>> pooling model fit\n")
-      # other pooling & related functions worth looking into:
-      # psfmi::psfmi_lr
-      # Hmisc:aRegImpute
       pool = summary(mice::pool(fit), "all", conf.int=TRUE, exponentiate=TRUE)
       pool <- pool %>% filter(term %in% vars)
       vmatch <- match(pool[,1], rownames(ret)) # col 1 of vals is the row names
       # ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %", "fmi")])
       ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %")])
-      if(FALSE){
-        rownames(ret)
-        pool[,1]
-        fit$analyses[[1]]
-        pool
-        y=1
-        ret
-        y=y+1
-      }
       if(xdebug) {
         cat("\n\n>> pooled model fit:\n")
         str(pool)
       }
     }
-      }
+  }
+}
+      
+#       # fml <- ifelse(met=="passive", )
+#       # metList <- case_match(met, 
+#                             # "default")
+#       if (met=="default"){
+#         # if(debug) cat("\n\n>> default method\n")
+#         if(debug & y==1) cat(" default method:\n")
+#         metList <- NULL
+#         # if(debug) cat("\n>>metList=", metList)
+#         
+#       } else if(met=="passive"){
+#           if(debug & y==1) cat(" passive imputation:\n")
+#           if(grepl("*", mods[y], fixed=TRUE)){ # the defaults are for this model
+#             inters <- sapply(mods[y],  function(x)  str_extract_all(x, "\\w+(?=\\s\\*)|(?<=\\*\\s)\\w+"))
+#             inters <- inters[[1]]
+#             inter <- paste(inters, collapse=".")
+#             inter2 <- paste(inters, collapse=":")
+#           }
+#           addInt <- paste(" +", inter2, sep=" ")
+#           frmla <- vector("list", ncol(ampDat))
+#           names(frmla) <- names(ampDat)
+#           # n=1
+#           ### I'll just make my own formulas instead of trying to update those....
+#           ### updating them is such a headache
+#           # for(n in seq_along(names(ampDat))){
+#           if(xdebug) cat("\nmice formulas:\n")
+#           # system.time({
+#           #   frmla <- as.formula(paste(names(ampDat), 
+#           #                                paste(names(ampDat)[-c(n)], collapse="+"), 
+#           #                                sep="~"))
+#           # })
+#           # system.time({
+#           for(n in seq_along(names(ampDat))){
+#           # for(n in names(ampDat)){
+#             nm <- names(ampDat)[n]
+#             rhside <- paste(names(ampDat)[-c(n)], collapse="+")
+#             frmla[[n]] <- as.formula(paste(nm, rhside, sep="~"))
+#             # if(xdebug) print(frmla[[n]])
+#           }
+#           # })
+# #######################################################################################
+#           # # for(form in seq_along(inImp$formulas)){
+#           # #   frmla[[form]] <- ifelse(names(inImp$formulas)[form] %in% inters,
+#           # #                           as.character(inImp$formulas[form]),
+#           # #                           paste(as.character(inImp$formulas[form]), addInt, sep=" "))
+#           # for(form in seq_along(ff)){
+#           #   frmla[[form]] <- ifelse(names(ff)[form] %in% inters,
+#           #                           ff[form],
+#           #                           paste(as.character(ff[form]), addInt, sep=" "))
+#           # }
+#           # names(frmla) <- names(ff)
+#           # if(xdebug) cat("\nmice formulas:\n")
+#           # if(xdebug) print(frmla)
+#           # inImp$formulas <- sapply(inImp$formulas, paste(resp, mod))
+#           
+#           # pre <- inImp$pred
+#           # # pre[c(inters), inter]
+#           # pre[c(inters),inter] <- 0
+# #######################################################################################
+#           # metList <- mkMetList(met=met, dat=ampDat, int=paste(inters, collapse="*"),col_sel = names(ampDat), debug=debug)
+#           metList <- metL[,met]
+#           # imp <- mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)
+#           
+#       } else {
+#         if (debug & y==1) cat(sprintf(" %s method:\n", met))
+#         metList <- mkMetList(met=met, dat=ampDat, col_sel=names(ampDat), debug=debug)
+#         if(FALSE){
+#           imp <- mice::mice(ampDat, method=NULL, m=m, print=FALSE, seed=13)
+#           imp_comp <- mice::complete(imp,action="long") 
+#           imp2 <- mice::mice(ampDat, m=m, print=FALSE, seed=13)
+#           imp_comp2 <- mice::complete(imp,action="long") 
+#         }
+#       }
+# #######################################################################################
+#       # if(debug) print(str(imp$imp))
+#       # if(debug) print(plot(imp))
+#       # create one long dataframe of all imputed datasets stacked, so you have an "impVar" for ppsfmi
+#       # imp_comp <- mice::complete(imp,action="long") 
+#       # if(debug){
+#       #   imp40 <- mice.mids(imp, maxit=35, print=F)
+#       #   print(plot(imp40))
+#       # }
+#       # imp$blocks
+#     # }
+#     
+#         # imp_comp <- imp_comp %>% 
+#         #   mutate( cam_fate = case_match(as.character(cam_fate),
+#         #                                              "H"  ~ 0,
+#         #                                              "F"  ~ 1,
+#         #                                              "D"  ~ 2,
+#         #                                              "S"  ~ 3,
+#         #                                              "A"  ~ 4,
+#         #                                              "Hu" ~ 5,
+#         #                                              "Ca" ~ 6,
+#         #                                              "U"  ~ 7
+#         #   ),
+#         #   species = ifelse(species=="LETE", 0, 1)
+#         #   )
+#         # levels(imp_comp$cam_fate)
+#         # levels(inters[2])
+#         # psdat <- psfmi::lbpmilr
+#         
+#         # formula here requires categorical vars to be wrapped in factor([var])
+#         # pool <- psfmi::psfmi_lr(data=imp_comp, nimp=m, impvar=".imp", formula=mods[y])
+#         # this function thinks cam_fate has 2 levels, for some asinine reason??
+#         # mod_form
+#       #   pool <- psfmi::psfmi_lr( data=imp_comp, 
+#       #                           # formula=mod_form, 
+#       #                           nimp=m, 
+#       #                           impvar=".imp", 
+#       #                           Outcome=resp,
+#       #                           # predictors=c("nest_age", "obs_int", "fdate"), 
+#       #                           # predictors=c("species","nest_age", "obs_int", "fdate", "cam_fate"),
+#       #                           predictors=c("species","nest_age", "obs_int", "fdate"),
+#       #                           # predictors=c("spcs","nest_age", "obs_int", "fdate"),
+#       #                           cat.predictors = c("cam_fate"),
+#       #                           # cat.predictors = c("cfate"),
+#       #                           int.predictors = inter,
+#       #                           method="D1")
+#       # if(FALSE){
+#       #   pool$multiparm
+#       # }
+# #######################################################################################
+#       if(debug) cat(sprintf("\n>> making %s imputed datasets", m))
+#       if(met=="stratify"){
+#         # imp <- impStrat("ampDat", met = metList, col_sel = cols)
+#         # cat("stratified")
+#         imp <- impStrat(ampDat, met = metList, col_sel = cols)
+#         imp$formulas
+#         # I don't think just passing the name really works (from the command line or 
+#         # another environment). can't find actual object
+#       } else if (met=="passive"){
+#         # imp <- mice::mice(ampDat, method=metList, m=m, pred=pre, maxit=10, print=FALSE)
+#         # cat("passive")
+#         imp <- mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)
+#       } else {
+#         # cat(met)
+#         imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
+#       }
+#       if(debug & !is.null(imp$loggedEvents)) print(imp$loggedEvents)
+#       # if(xdebug){
+#       if(impplot){
+#         visImp(imp)
+#       }
+#       # if(debug) print(plot(imp))
+#       # imp_comp <- mice::complete(imp,action="long") 
+#       if(debug) cat("\n>> fitting model:", mods[y])
+#       fit = with(imp,
+#                  glm( as.formula( paste0(resp, mods[y]) ),
+#                       family=fam,
+#                       method = regMet,
+#                       control=brglmControl(maxit=iter)
+#       ))
+#       if(debug) cat("\n>> pooling model fit\n")
+#       # other pooling & related functions worth looking into:
+#       # psfmi::psfmi_lr
+#       # Hmisc:aRegImpute
+#       pool = summary(mice::pool(fit), "all", conf.int=TRUE, exponentiate=TRUE)
+#       pool <- pool %>% filter(term %in% vars)
+#       vmatch <- match(pool[,1], rownames(ret)) # col 1 of vals is the row names
+#       # ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %", "fmi")])
+#       ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %")])
+#       if(FALSE){
+#         rownames(ret)
+#         pool[,1]
+#         fit$analyses[[1]]
+#         pool
+#         y=1
+#         ret
+#         y=y+1
+#       }
+#       if(xdebug) {
+#         cat("\n\n>> pooled model fit:\n")
+#         str(pool)
+#       }
+    # }
+      # }
   
 #######################################################################################
   # fits <- list()
