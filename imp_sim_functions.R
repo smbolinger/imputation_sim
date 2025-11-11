@@ -8,6 +8,7 @@ debugging <- FALSE # for uickly setting values when working in the file with the
 ########################################################################################
 ###### FACTORS --> DUMMIES #############################################################
 ########################################################################################
+
 if(FALSE){
   dat <- dat4sim
 }
@@ -25,14 +26,14 @@ add_dummy <- function(dat, debug=FALSE){
   # dat<- dat[, c("obs_int", "nest_age", "fdate", "HF_mis", "is_u", "speciesCONI")]
   # dat4amp <- cbind(dat4amp, dummy_vars, speciesLETE, speciesCONI)
   dat <- cbind(dat, dummy_vars)
-  if (debug) cat(">> add dummy variables and remove factors. new columns:\n", names(dat))
+  if (debug) cat("\n\n>> add dummy variables and remove factors. new columns:\n", names(dat))
   return(dat)
 }
-
 
 ########################################################################################
 ###### DUMMIES --> FACTORS #############################################################
 ########################################################################################
+
 if(FALSE){
   dat <-amp_out_wt$amp
 }
@@ -100,6 +101,7 @@ add_fact <- function(dat, facToNum=FALSE, debug=FALSE){
 ########################################################################################
 ####### MAKE METHOD LIST #############################################################
 ########################################################################################
+
 if(FALSE){
   fateMet <- "pmm"
   ageMet <- "pmm"
@@ -118,10 +120,6 @@ if(FALSE){
   int <- NULL
   int <- paste(inters, collapse="*")
 }
-# mkMetList <- function(ageMet = "pmm", fateMet = "pmm", misMet = "pmm", resp=resp){
-# mkMetList <- function(met="pmm", resp=resp){
-# mkMetList <- function(mType, cols){
-# mkMetList <- function(metL, col_sel, debug=FALSE){
 mkMetList <- function(met, dat, col_sel, int=NULL, debug=FALSE){
   
   # if (mType=="default"){
@@ -204,6 +202,7 @@ mkMetList <- function(met, dat, col_sel, int=NULL, debug=FALSE){
 ########################################################################################
 ##### MAKE SIMULATED DATA ###############################################################
 ########################################################################################
+
 if (FALSE){
   # nd <- ndGLM_scl_cc
   nd <- dat4sim
@@ -217,9 +216,10 @@ if (FALSE){
 }
 
 # mkSimDat <- function(nd,col_sel, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
-mkSimDat <- function(nd, vars, facToNum=FALSE, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
+mkSimDat <- function(seeed, nd, vars, facToNum=FALSE, method="amp", wt=TRUE, debug=FALSE, xdebug=FALSE, convFact=FALSE){
   if(method=="amp"){
     dat4amp <- add_dummy(nd, debug=debug)
+    set.seed(seed=seeed)
     # dat4amp <- as.numeric(dat4amp)
     # dat4amp <- apply(dat4amp,MARGIN=2, FUN=function(x) as.numeric(x))
     
@@ -256,19 +256,19 @@ mkSimDat <- function(nd, vars, facToNum=FALSE, method="amp", wt=TRUE, debug=FALS
     colnames(miss_patt_mat) <- c(is_miss, no_miss)
     # rownames(miss_patt_mat) <- c("nest_age", )
     patt_freq <- c(0.45,0.45,0.1) # missing: age only, fate only, both
-    if(debug){
+    if(debug & seeed==1){
       cat("\n\n>> missingness matrix:\n")
       print(miss_patt_mat)
       cat("\n>> proportion missing:", new_prop, "\n\n>> frequency of each pattern:", patt_freq)
     }
     
     new_order <- c(is_miss, no_miss)
-    if(debug) cat("\n\n>> reorder columns:", new_order)
+    if(xdebug) cat("\n\n>> reorder columns:", new_order)
     dat4amp <- dat4amp %>% select(all_of(new_order)) # reorder the columns to match the matrix
     
     suppressWarnings(amp_out <- mice::ampute(dat4amp, prop = new_prop, patterns = miss_patt_mat, freq = patt_freq))
-    if(debug) cat("\n\nCreate new missing values:\n")
-    if(debug) print(mice::md.pattern(amp_out$amp, rotate.names = TRUE))
+    if(xdebug) cat("\n\nCreate new missing values:\n")
+    if(xdebug) print(mice::md.pattern(amp_out$amp, rotate.names = TRUE))
     # print(missing_tab("amp_out", prVars))
     # missing_tab("amp_out", prVars)
     # 1 = complete; 0 = has missings
@@ -276,7 +276,7 @@ mkSimDat <- function(nd, vars, facToNum=FALSE, method="amp", wt=TRUE, debug=FALS
     wts <- amp_out$weights 
     wts[1,] <- c(0, 0, 0, 0.8, 0.2, rep(0, 8)) # missing age only - what vars contribute
     # wts[3,] <- c(0, 0, 0, 0.8, 0.2, rep(0, 8))
-    if(debug){
+    if(xdebug){
       cat("\n>> new weights:\n")
       print(wts)
       cat("\n>> to go with the patterns:\n")
@@ -324,27 +324,29 @@ mkSimDat <- function(nd, vars, facToNum=FALSE, method="amp", wt=TRUE, debug=FALS
     }
   }
 }
+
 ########################################################################################
 ##### IMPUTE/FIT/POOL SIM DATA ##########################################################
 ########################################################################################
+
 if(debugging){
   # dat=mkSimDat(ndGLM_scl_cc, convFact = TRUE)$amp
   # ampDat=mkSimDat(ndGLM_scl_cc, convFact = TRUE)$amp
   aDat = sim_dat$amp
   # aDat = sim_dat$amp[1:20,]
-  # resp="is_u"
-  resp = "HF_mis"
+  resp="is_u"
+  # resp = "HF_mis"
   # resp="isu"
   # resp = "HFmis"
   mod=modList[1]
   mods = mods4sim
   m=20
-  # met="rf"
-  met="default"
-  met="cc"
+  met="rf"
+  # met="default"
+  # met="cc"
   # met = "caliber"
-  met="passive"
-  met = "stratify"
+  # met="passive"
+  # met = "stratify"
   mets <- met_list
   # seed=61389
   
@@ -366,20 +368,13 @@ if(debugging){
 }
 
 # full versions with all comments (old code) in fate_GLM_imp_simulation.Rmd
-
-# mkImpSim <- function(ampDat, resp, mod, vars, m=30, met="rf", fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
-# mkImpSim <- function(ampDat, resp, mod, vars, m=30, metList=rep("", 6),  fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
-# mkImpSim <- function(ampDat, cols, resp, mod, vars, met, m=30, fam=binomial, regMet="brglm_fit", iter=500, seed=NULL, passive="both", debug=FALSE){
-# mkImpSim <- function(fullDat, ampDat, cols, resp, mod, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
-# mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, fcToNum=FALSE, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE){
-# mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE, xdebug=FALSE){
-
 ### Nest the loop inside the if statement so you aren't running the if check every loop?
 ### 
 mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE, xdebug=FALSE, impplot=FALSE){
-  ret    <- array(NA, dim=c(length(vars), 4, length(mods)))
+  ret    <- array(NA, dim=c(length(vars), 3, length(mods)))
   
-  dimnames(ret) <- list(vars, c( "estimate", "2.5 %", "97.5 %", "fmi"), names(mods))
+  # dimnames(ret) <- list(vars, c( "estimate", "2.5 %", "97.5 %", "fmi"), names(mods))
+  dimnames(ret) <- list(vars, c( "estimate", "2.5 %", "97.5 %"), names(mods))
   # ret
   # browser()
   if (met == "cc"){
@@ -397,11 +392,12 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
       # confint(fit)[-1,]
 
       vals <- cbind(coef(fit)[-1], confint(fit)[-1,]) # confint has 2 columns, so need comma
-      vals <- cbind(vals, rep(-1.0, nrow(vals)))
+      # vals <- cbind(vals, rep(-1.0, nrow(vals))) # fmi for complete-case analysis
       # vals <- data.frame(vals) # why does it need to be a dataframe? oh, maybe bc of filter?
       # also so that numeric stays numeric when you add names?
       rownames(vals) <- names(coef(fit))[-1]
-      colnames(vals) <-  c("estimate", "2.5 %", "97.5 %", "fmi") # this doesn't work if not a df
+      # colnames(vals) <-  c("estimate", "2.5 %", "97.5 %", "fmi") # this doesn't work if not a df
+      colnames(vals) <-  c("estimate", "2.5 %", "97.5 %") # this doesn't work if not a df
       vmatch <- match(rownames(vals), rownames(ret)) # col 1 of vals is the row names
       # vmatch <- na.omit(match(rownames(vals), rownames(ret))) # col 1 of vals is the row names
       ret[vmatch, , y]  <- as.matrix(vals)# remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
@@ -462,6 +458,7 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
             frmla[[n]] <- as.formula(paste(nm, rhside, sep="~"))
             if(xdebug) print(frmla[[n]])
           }
+#######################################################################################
           # # for(form in seq_along(inImp$formulas)){
           # #   frmla[[form]] <- ifelse(names(inImp$formulas)[form] %in% inters,
           # #                           as.character(inImp$formulas[form]),
@@ -479,6 +476,7 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
           # pre <- inImp$pred
           # # pre[c(inters), inter]
           # pre[c(inters),inter] <- 0
+#######################################################################################
           metList <- mkMetList(met=met, dat=ampDat, int=paste(inters, collapse="*"),col_sel = names(ampDat), debug=debug)
           # imp <- mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)
           
@@ -558,15 +556,13 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
         # cat(met)
         imp <- mice::mice(ampDat, method=metList, m=m, print=FALSE)
       }
-      if(xdebug & !is.null(imp$loggedEvents)) print(imp$loggedEvents)
+      if(debug & !is.null(imp$loggedEvents)) print(imp$loggedEvents)
       # if(xdebug){
       if(impplot){
-        imp40 <- mice.mids(imp, maxit=35, print=F)
-        # plot(imp40)
-        mice:::plot.mids(imp40)
+        visImp(imp)
       }
       # if(debug) print(plot(imp))
-      imp_comp <- mice::complete(imp,action="long") 
+      # imp_comp <- mice::complete(imp,action="long") 
       if(debug) cat("\n>> fitting model:", mods[y])
       fit = with(imp,
                  glm( as.formula( paste0(resp, mods[y]) ),
@@ -578,10 +574,11 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
       # other pooling & related functions worth looking into:
       # psfmi::psfmi_lr
       # Hmisc:aRegImpute
-      pool = summary(mice::pool(fit), "all", conf.int=TRUE)
+      pool = summary(mice::pool(fit), "all", conf.int=TRUE, exponentiate=TRUE)
       pool <- pool %>% filter(term %in% vars)
       vmatch <- match(pool[,1], rownames(ret)) # col 1 of vals is the row names
-      ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %", "fmi")])
+      # ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %", "fmi")])
+      ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %")])
       if(FALSE){
         rownames(ret)
         pool[,1]
@@ -591,20 +588,14 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
         ret
         y=y+1
       }
-      # if(debug) {
-      #   cat("\n\n>> pooled model fit:\n")
-      #   str(pool)
-      # }
-      # ret[m,] = pool[, c("term", "estimate", "2.5 %", "97.5 %", "fmi")] # maybe do need term?
-      # for(y in seq_along(mods)){
-      #   
-      # }
-      
-      
-      
+      if(xdebug) {
+        cat("\n\n>> pooled model fit:\n")
+        str(pool)
+      }
     }
       }
   
+#######################################################################################
   # fits <- list()
   # if (passive=="both" | passive=="no"){
   #   fit = with(imp,
@@ -644,14 +635,47 @@ mkImpSim <- function(fullDat, aDat, cols, resp, mods, vars, met, m=20, fam=binom
   # don't need term? - term is the name in the matrix
   # pool = pool[, c("estimate", "2.5 %", "97.5 %", "fmi")]
   # pool
-  if(debug) cat("\n\nret:\n")
-  if (debug) print(str(ret))
+#######################################################################################
+  if(xdebug) cat("\n\nret:\n")
+  if (xdebug) print(str(ret))
   return(ret)
+}
+
+########################################################################################
+###### VISUALIZE IMPUTATIONS ###################################################################
+########################################################################################
+
+visImp <- function(imp){
+  
+  cat("\n\n ************* PLOTS *********************************** \n\n")
+  # library(patchwork)
+  # strPl <- mice::stripplot(imp, layout=c(3,1))
+  # strPl <- mice::stripplot(imp)
+  strPl <- mice::stripplot(imp, nest_age + cam_fate ~ .imp)
+  # print(strPl)
+  
+  # denPl <- mice::densityplot(imp, layout=c(3,1))
+  ### there's only one continuous predictor:
+  denPl <- mice::densityplot(imp)
+  # print(denPl)
+  
+    
+  imp40 <- mice.mids(imp, maxit=35, print=F)
+  # plot(imp40)
+  pl40 <- mice:::plot.mids(imp40, layout=c(4,2))
+  print(pl40)
+  
+  # (strPl | denPl) / pl40 # patchwork may not work with trellis plots?
+  cplot <- cowplot::plot_grid(strPl, denPl, rel_widths=c(1.5, 1))
+  print(cplot)
+  
+  
 }
 
 ########################################################################################
 ###### RUN SIMULATION ###################################################################
 ########################################################################################
+
 if(FALSE){
   nruns=10
   mod=modList[1]
@@ -670,21 +694,27 @@ if(FALSE){
   debug <- params$deb
   mods <- mods4sim
 
-    r=1
+    run=1
     # m=1
     # x=1
     x = "rf"
     x = met
     vals <- imp_sim
+    # run <- 9
+par <- list(nrun=3, 
+            hdir="/home/wodehouse/projects/fate_glm/",
+            deb=TRUE,
+            xdeb=TRUE, # for obsessively checking things - not useful for normal debugging & lots of text output 
+            ipl=FALSE,
+            lin=FALSE,
+            m=5)
+run =  run + 1
 }
 
 # for some reason, this can't find the global vars in fate_GLM1 when I knit that document.
 # so, pass them all as arguments? but they already are...
 # arguments: function to make sim data, real data, response, predictors, model, nruns
-# runSim <- function(datNA, col_sel, resp, vars, mod, mets, nruns=100, seed=NULL, passive="both", debug=FALSE){
-# runSim <- function(dat, datNA, col_sel, resp, vars, mod, mets, nruns=100, passive="both", debug=FALSE){
-# runSim <- function(datNA, col_sel, resp, vars, mods, mets,fcToNum=FALSE,m=25, nruns=100, passive="both", debug=FALSE, xdebug=FALSE){
-runSim <- function(datNA, col_sel, resp, vars, mods, mets,par,fcToNum=FALSE){
+runSim <- function(fullDat, col_sel, resp, vars, mods, mets,par,fcToNum=FALSE){
    m=par$m
    nruns=par$nrun
    debug = par$deb
@@ -692,31 +722,50 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,par,fcToNum=FALSE){
    # ipl   = par$impPlot
    ipl   = par$ipl
   
-  res <- array(NA, dim = c(length(vars), length(mets), nruns, 4, length(mods)))
+  # res <- array(NA, dim = c(length(vars), length(mets), nruns, 4, length(mods)))
+  res <- array(NA, dim = c(length(vars), length(mets), nruns, 3, length(mods)))
   # dimnames(res) <- list(c("pmm", "rf"),
   dimnames(res) <- list(sort(as.character(vars)),
                         # c("pmm", "rf", "cart"),
                         as.character(mets),
                         as.character(1:nruns),
-                        c("estimate", "2.5 %","97.5 %","fmi"),
+                        # c("estimate", "2.5 %","97.5 %","fmi"),
+                        c("estimate", "2.5 %","97.5 %"),
                         names(mods)
                         )
   # if(debug) cat("res matrix is formatted as follows:",str(res))
-  if(debug) cat("\n\n>>>> res matrix is formatted as follows:\n")
-  if(debug) print(str(res))
-  datNA <- datNA %>% select(all_of(col_sel))
+  if(xdebug) cat("\n\n>>>>> res matrix is formatted as follows:\n")
+  if(xdebug) print(str(res))
+  # datNA <- datNA %>% select(all_of(col_sel))
+  ### does this need to be here?
+  # fullDat <- fullDat %>% select(all_of(col_sel))
   cat(sprintf(">>> running simulation %s times\n", nruns))
-  for(r in 1:nruns){
-    cat(r)
+  for(run in 1:nruns){
+    cat(run)
+    if(debug){
+      cat("\n\n********************************************************************************************")
+      cat(sprintf("\n//////// RUN %s ////////////////////////////////////////////////////////////////////////////\n", run))
+      cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+      cat("\n\n********************************************************************************************")
+    }
     # ndat = nDat
     # if(missing(datNA)) datNA <- mkSimDat(ndat)
     # if the complete data was passed as an argument, add the NAs; otherwise, should be data with NA
     # if(all(colSums(is.na(datNA)) == 0)) datNA <- mkSimDat(datNA, debug = TRUE, convFact = TRUE)$amp
-    if(all(colSums(is.na(datNA)) == 0)) datNA <- mkSimDat(datNA, debug = debug, convFact = TRUE, fcToNum=fcToNum)$amp
+    # MAKE DATA WITHIN THE RUN_SIM FUNCTION?
+    # datNA <- mkSimDat(datNA, debug = debug, convFact = TRUE, fcToNum=fcToNum)$amp
+    datNA <- mkSimDat(nd = fullDat, seeed = run, vars=vars, method = "amp", wt = TRUE, xdebug=xdebug, debug = debug, convFact = TRUE)
+    if(FALSE ){
+      run=run+1
+    }
+    datNA <- datNA$amp
+    # datNA <- datNA %>% select(all_of(col_sel))
     # datNA1 <- datNA
     # for(x in seq_along(mets)){
     for(x in mets){ # this makes it match by name, not just by index
       if (xdebug) cat("\n\n>>>> method:", x)
+      
+#######################################################################################
       # could try using map to make sure the vars match up?
       # vals <- as.matrix(mkImpSim(dat=datNA, resp=resp, vars=vars, mod=mod, met=mets[m]))
     # if you include term in the mkImpSim output, as.matrix coerces all columns to character. 
@@ -732,6 +781,7 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,par,fcToNum=FALSE){
       # vals <- mkImpSim(fullDat=dat,ampDat=datNA, cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, debug = debug)
       # vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, vars=vars, mod=mod, met=x, debug = debug)
       # vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, vars=vars, mods=mods, met=x, debug = debug,m = 75)
+#######################################################################################
       vals <- mkImpSim(aDat=datNA,cols=col_sel,resp=resp, vars=vars, mods=mods, met=x, debug = debug,m=m, xdebug=xdebug, impplot=ipl)
       if(FALSE){
         vals
@@ -748,25 +798,34 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,par,fcToNum=FALSE){
         res["nest_age", x, , "2.5 %","m1"] 
       }
       if(xdebug){ 
-        cat(sprintf("\n>> output of mkImpSim for all models for run %s and method %s:\n", r, x))
+        cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+        cat(sprintf("\n>> output of mkImpSim for all models for run %s and method %s:\n", run, x))
         str(vals)
         }
       # vmatch <- match(vals[,1], rownames(res)) # col 1 of vals is the row names
       vmatch <- match(rownames(vals), rownames(res)) # col 1 of vals is the row names
       # vals <- as.matrix(vals[,-1]) # remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
       # dim(res[vmatch, x, r,,])  
-      res[vmatch, x, r,,]  <- vals
+      res[vmatch, x, run,,]  <- vals
       if(xdebug){ 
+        cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
         cat("\n>> res matrix filled in:\n")
         # print(res[vmatch,x,r,])
         # print(res[,x,r,])
-        print(res[,,r,,])
-        }
-      # used x bc m already exists, so for testing it was confusing. doesn't matter once fxn works.
-      # res[vmatch ,x,,]
-      # res[,x,r,]
-      gc()
+        print(res[,,run,,])
+      }
     }
+    if(debug & run==nruns){
+      cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+      cat("\n>>>> full res matrix:\n")
+      print(res[,,,,])
+    }
+    # used x bc m already exists, so for testing it was confusing. doesn't matter once fxn works.
+    # res[vmatch ,x,,]
+    # res[,x,r,]
+    # 
+    ### print memory usage every 10 runs:
+    if(run %% 10 == 0) print(gc()) # modulo operator %%
     # res[, 1, r,] <- as.matrix(mkImpSim(dat=datNA, resp=resp, vars=vars, mod=mod, met="pmm"))
     # res[, 2, r,] <- as.matrix(mkImpSim(dat=datNA, resp=resp, vars=vars, mod=mod, met="rf"))
     # res[, 3, r,] <- as.matrix(mkImpSim(dat=datNA, resp=resp, vars=vars, mod=mod, met="cart"))
@@ -778,10 +837,12 @@ runSim <- function(datNA, col_sel, resp, vars, mods, mets,par,fcToNum=FALSE){
 if(FALSE){
   # res1 <- runSim(datNA = dat, resp = resp, vars = vars, mod = mod, mets = mets, nruns = 2, debug=TRUE)
   res1 <- runSim(datNA = dat, resp = resp, vars = vars, mod = mod, mets = mets, nruns = 5)
-  }
+}
+
 ########################################################################################
 ###### GET AVERAGE BIAS ################################################################
 ########################################################################################
+
 if(FALSE){
   # dat=simDatNA
   dat=imp_sim
@@ -822,7 +883,7 @@ if(FALSE){
   fam=binomial
   regMet="brglm_fit"
   iter=500
-  cols <- col_sel
+  cols <- col_list
   # why only these vars?
   # vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
   biasVals = bias_names
@@ -832,10 +893,6 @@ if(FALSE){
   hdir <- params$hdir
 }
 
-# parAvg <- function(dat, vars, mets, biasVals, trueVals){
-# parAvg <- function(dat, resp, vars, mod, mets, biasVals, trueVals){
-# parAvg <- function(fullDat, impDat, resp, vars, mod, regMet="brglm_fit", fam=binomial, iter=500, mets, biasVals, debug=FALSE){
-# parAvg <- function(fullDat, impDat, resp, vars, modnum, regMet="brglm_fit", fam=binomial, iter=500, mets, biasVals, debug=FALSE){
 parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", fam=binomial, iter=500, mets, biasVals, debug=FALSE, xdebug=FALSE){
   # trueVals is optional
   # if(missing(trueVals)){
@@ -850,15 +907,20 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
                    method=regMet,
                    control=brglmControl(maxit=iter) )
     # saveRDS(fitReal, sprintf("out/fitReal_%s_m%s.rds", resp, modnum ))
-    
     now_dir = paste0(hdir, "out/", format(Sys.time(), "%d%b"))
     # now_dir
     # if(!dir.exists(paste0(hdir, "out/now_"))) dir.create(paste0(hdir, "out/now_"))
     if(!dir.exists(now_dir)) dir.create(now_dir)
     cat("\n>>> creating directory:", now_dir, "exists?", exists(now_dir))
-    saveRDS(fitReal, sprintf("%s/fitReal_%s_m%s.rds", now_dir, resp, z))
+    # saveRDS(fitReal, sprintf("%s/fitReal_%s_m%s.rds", now_dir, resp, z))
     trueVals <- coef(fitReal)[vars] # the coefs have names associated with them
+    # but this ^ creates NAs
+    # trueVals <- coef(fitReal)[-1] # the coefs have names associated with them
     # trueVals
+    # names(trueVals) <-  names(fitReal[[1]])[vars]
+    
+    # trueVals
+    # vars
     # }
   # mList <- modList[c(1, 8, 16)]
     # for (v in vars){ # v = var names, not indices
@@ -887,6 +949,17 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       # vars[v]
       # avg <- apply(dat[vars[v], , ,], c(1,3), mean, na.rm=TRUE)
       # avg <- apply(impDat[v, , ,], c(1,3), mean, na.rm=TRUE)
+      # which(dimnames(impDat) %in% vars)
+      # dim(impDat)[dimnames(impDat)==vars]
+      # dimnames(impDat)[[1]] %in% vars
+      
+      # ddd <- dimnames(impDat)
+      # dname <- lapply(dimnames(impDat), function(x) x%in%c(vars,seq(1:nrun)))
+      # dname <- lapply(dimnames(impDat), function(x) x%in%biasVals)
+      # # which(dimnames(impDat) == vars)
+      # # dd <- dim(impDat)
+      # # which(dim(impDat))
+      # marg <- c(which(dimnames(impDat) %in% vars), which(dimnames(impDat) %in% biasVals))
       avg <- apply(impDat[v, , , ,],MARGIN=c(1,3),FUN = mean, na.rm=TRUE)
       # avg
       sdev <- apply(impDat[v, , , ,],MARGIN=c(1,3),FUN = sd, na.rm=TRUE)
@@ -898,7 +971,10 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
         # impDat["nest_age", "default", , "estimate","m1"] <- c(-2, -2, -2)
         impDat[v,,,,]
         avg
+        dimnames(impDat)
         sdev
+        bias[v,,"value",]
+        true
       }
       # impDat[v,1,,1]
       # impDat[]
@@ -916,6 +992,7 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       # if(debug) cat("true param value:",trueVals[v])
       # true
       # bias[vars[v], , "bias"] <- avg[,"estimate"] - trueVals[vars[v]]
+      # dimnames(avg)
       bias[v, , "value", ] <- avg[,"estimate"]
       bias[v, , "bias", ] <- avg[,"estimate"] - true
       # bias
@@ -928,10 +1005,12 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       bias[v, , "avgWidth",] <- rowMeans(impDat[v,,,"97.5 %",] - impDat[v,,,"2.5 %",]) # gives the same output
       bias[v, , "RMSE",] <- sqrt((avg[,"estimate"] - true)^2)
       bias[v, , "SD",] <- sdev[,"estimate"]
-      if(debug) cat("true param values:")
-      if(debug) print(trueVals)
-      if(debug) cat("\n\nbias values:\n")
-      if (debug) print(bias)
+      
+      if (xdebug) cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+      if (xdebug) cat("\n\n>> true param values:\n")
+      if (xdebug) print(trueVals)
+      if (xdebug) cat("\n\n>> bias values:\n")
+      if (xdebug) print(bias)
       # biasfile <- paste0(params$hdir, sprintf("%sout/bias_vals_%s_%s_%s_.rds", hdir,r, names(mods4sim)[z], suffix))
       # biasfile <-  sprintf("%sout/%s/bias_vals_%s_%s_%s_.rds", hdir,now_,r, names(mods4sim)[z], suffix)
       cat(sprintf("\n>>> saving bias values for model %s with response %s for variable %s", 
@@ -943,7 +1022,15 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       # biasfile1 <- paste0(params$hdir, sprintf("%sout/bias_vals_%s_%s_%s_.csv", hdir, r, names(mods4sim)[z], suffix))
       # biasfile1 <-  sprintf("%sout/%s/bias_vals_%s_%s_%s_.csv", hdir, now_, r, names(mods4sim)[z], suffix)
       biasfile1 <-  sprintf("%s/bias_vals_%s_%s_%s.csv",now_dir,r, names(mods4sim)[z], suffix)
-      write.csv(bias, file = biasfile1)# write to csv in case script aborts 
+      
+      biasdf <- as.data.frame(bias)
+      names(trueVals)[ is.na(names(trueVals)) ] <- setdiff(vars, names(trueVals))
+      # trueVals
+      biasdf <- cbind(trueVals, biasdf)
+      # biasdf <- merge
+      # trVals <- (trueVals[!is.na(trueVals)])
+      
+      write.csv(biasdf, file = biasfile1)# write to csv in case script aborts 
       if(FALSE){
         true
         # avg[,"2.5 %"]
@@ -960,6 +1047,8 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
   
 }
 
+########################################################################################
+########################################################################################
 test_avg <- function(simDatNA, fitReal){
   # colMeans(simDatNA["cam_fateA", , , ])
   cat(">> all 5 replicates for cam_fateA:\n\n")
