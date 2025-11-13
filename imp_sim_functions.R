@@ -154,7 +154,7 @@ mkMetList <- function(met, dat, int=NULL, debug=FALSE){
       # interTrue & met=="passive" ~ paste("~I(",int,")"),
                             met =="default" ~ NA,
                             met == "passive" ~ NA,
-                            met=="stratify" & c=="species" ~ NA,
+                            # met=="stratify" & c=="species" ~ NA, # this should still exist, but take species out of formula
                             # met =="default" ~ "",
                             interTrue & met !="passive" ~ NA,
                             c=="inter" ~ NA,
@@ -354,6 +354,7 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
     # ### *~*~*~*~* #######
     # if(debug) cat("\n\n>> data:\n")
     # if(debug) print(str(dat1))
+    
     for(y in seq_along(mods)){
       fit = glm(as.formula(paste0(resp, mods[y])), data=dat1, family=fam, method=regMet, control=brglmControl(maxit=iter))
       # confint(fit)[-1,]
