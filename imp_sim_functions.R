@@ -26,7 +26,7 @@ add_dummy <- function(dat, debug=FALSE){
   # dat<- dat[, c("obs_int", "nest_age", "fdate", "HF_mis", "is_u", "speciesCONI")]
   # dat4amp <- cbind(dat4amp, dummy_vars, speciesLETE, speciesCONI)
   dat <- cbind(dat, dummy_vars)
-  if (debug) cat("\n\n>> add dummy variables and remove factors. new columns:\n", names(dat))
+  # if (debug) cat("\n\n>> add dummy variables and remove factors. new columns:\n", names(dat))
   return(dat)
 }
 
@@ -82,9 +82,9 @@ add_fact <- function(dat, facToNum=FALSE, debug=FALSE){
   rem_col <- na.omit(str_extract(string = names(dat), pattern = "cam_fate\\w+|species\\w+"))
   # names(dat)[ c(3:8, 12,13)]
   # names(dat)
-  if (debug) cat("\n>> converted dummies to factors. all columns:\n", names(dat)) 
+  # if (debug) cat("\n>> converted dummies to factors. all columns:\n", names(dat)) 
   # if (debug) cat("\n>> columns to remove:\n", names(dat)[rem_col])
-  if (debug) cat("\n>> columns to remove:\n", rem_col)
+  # if (debug) cat("\n>> columns to remove:\n", rem_col)
   
   # dat <- 
   # dat[-c("species")]
@@ -122,49 +122,19 @@ if(FALSE){
 }
 # mkMetList <- function(met, dat, col_sel, int=NULL, debug=FALSE){
 mkMetList <- function(met, dat, int=NULL, debug=FALSE){
-  
-  # if (mType=="default"){
-  #   met=NULL
-  # } else if (mType=="cc"){
-  #   
-  # }
-  # names(dat4imp[])
-  # u<-names(colSums(is.na(dat4imp)))
-  # metList <- rep("", 6)
-  ### colums in col_sel have already been selected
   col_sel <- names(dat)
   metList <- rep("",length(col_sel))
   catList <- c("HF_mis", "cam_fate", "species", "is_u")
-  # metList
   names(metList) <- col_sel
-  # metList["cam_fate"] <- fateMet
-  # metList["nest_age"] <- ageMet
-  # metList["cam_fate"] <- met
-  # metList["nest_age"] <- met
   
   colNA <- names(dat)[colSums(is.na(dat)) > 0]
   is_num <- names(dat)[sapply(dat, is.numeric)]
-  # is_bin <- names(dat)[length(sapply(dat, levels))==2]
   is_bin <- names(dat)[sapply(dat, function(x) length(levels(x)))==2]
   is_cat <- names(dat)[sapply(dat, function(x) length(levels(x)))>2]
-  # is_num <- names(dat)[where(is.numeric(dat))]
-  # which(is.numeric(
   
-  # if (resp %in% colNA) metList[resp] <- misMet
-  # metList[resp] <- ifelse(resp %in% colNA, misMet, "")
-  # metList[resp] <- ifelse(resp %in% colNA, met, "")
 
-  # if(met=="caliber"){
-  #   for(c in col_sel){
-  #     catList <- c("HF_mis", "cam_fate", "species", "is_u")
-  #     # if(c %in% catList ) metList[c] = "rfcat" 
-  #     if(c %in% catList ) metList[c] = "rfcat"
-  #   }
-  # }
-  # met2 <- ""
   for(c in col_sel){
     if(met=="caliber"){
-      # catList <- c("HF_mis", "cam_fate", "species", "is_u")
       if(c %in% catList ) met1 = "rfcat" else met1 = "rfcont"
     }else if(met %in% c("default.int", "pmm.int")){
       met1 <- str_extract(met, pattern = "\\w+(?=.)") # everything up until the period
@@ -178,44 +148,21 @@ mkMetList <- function(met, dat, int=NULL, debug=FALSE){
       # met2 <- paste("~I(", int,")")
     } else {met1 <- met}
     
-    # print(met)
-  # for(c in cols){
-    # metList[c]<- ifelse(c %in% colNA, metL[c], "")
-    # if(grepl(".",c,fixed=T) & met=="passive"){
-    #   metList[c] <- paste("~I(",int,")")
-    # } else if 
-    # metList[c] <- ifelse((grepl(".",c,fixed=T) & met=="passive"), paste("~I(",int,")"), ifelse(c%in%colNA,met1,""))
     interTrue <- ifelse((grepl(".",c,fixed=T)), TRUE, FALSE)
     # make NAs so that those columns can be dropped later
-    metList[c] <- case_when(interTrue & met=="passive" ~ paste("~I(",int,")"),
+    metList[c] <- case_when(
+      # interTrue & met=="passive" ~ paste("~I(",int,")"),
                             met =="default" ~ NA,
+                            met == "passive" ~ NA,
                             met=="stratify" & c=="species" ~ NA,
                             # met =="default" ~ "",
                             interTrue & met !="passive" ~ NA,
                             c=="inter" ~ NA,
                             !interTrue & c%in%colNA ~ met1,
                             .default = ""
-    
                             )
 
-    # if(grepl(".", c, fixed=TRUE)){
-    #   metList[c] = paste("~I(", int,")") 
-    # } else {
-    #   metList[c]<- ifelse(c %in% colNA, met1, "")
-    # }
-    # metList[c] <- ifelse(grepl(".", c, fixed=TRUE), paste("~I(", int,")"), metList[c])
-    # metList[c]<- case_when(c %in% colNA  met1, "")
-    # metList[c]<- ifelse(grepl(":", c,fixed = TRUE), met2, "")
-    # if(met=="passive" & grepl(":", c, fixed=TRUE)) metList[c] = met2 
-    # if(grepl(":", c, fixed=TRUE)) metList[c] = met2 
-    # grepl(".", c, fixed=TRUE)
-    # this is not being evaluated for some reason??
-    
   }
-  if(debug){
-    cat(sprintf("methods for each variable (%s total):\n", length(metList)))
-    print( metList)
-    }
   return(metList)
 }
 
@@ -240,11 +187,6 @@ mkSimDat <- function(seeed, nd, vars, facToNum=FALSE, method="amp", wt=TRUE, deb
   if(method=="amp"){
     dat4amp <- add_dummy(nd, debug=debug)
     set.seed(seed=seeed)
-    # dat4amp <- as.numeric(dat4amp)
-    # dat4amp <- apply(dat4amp,MARGIN=2, FUN=function(x) as.numeric(x))
-    
-    # dat4amp <-nd %>% select(all_of(col_sel)) %>% add_dummy(debug=TRUE)
-    # amp_out <- mice::ampute(dat4amp, run = FALSE)
     suppressWarnings(amp_out1 <- mice::ampute(dat4amp))
     
     new_patt <- amp_out1$patterns
@@ -254,59 +196,55 @@ mkSimDat <- function(seeed, nd, vars, facToNum=FALSE, method="amp", wt=TRUE, deb
     # The problem with doing this with indices is that (as just happened), I forget how
     # I did things and then add new variables w/o accounting for them
     # Easier to reference names?
-    # no_mis_c
-    # is_mis <- vars[-c(no_mis)]
-    # is_miss <- vars[!vars %in% no_mis]
     is_miss <- names(new_patt)[!names(new_patt) %in% no_miss]
     is_miss
-    # no_miss <- names(new_patt)[c(1, 3, 5:7)]
-    # is_miss <- names(new_patt)[-c(1,3,5:7)] # Reve Coffee Lab in BR
     
     # the order: missing age only; missing fate/HF_mis only; missing both
     miss_pat <- list(c(0, rep(1,7)), c(1,rep(0,7)), c(rep(0,8)) )
-    
     miss_pat
     
     m <- do.call(rbind,miss_pat) # create the matrix of the missingness patterns 
-    # rep(c(rep(1,5)),3)
     p <- do.call(rbind, rep(list(c(rep(1,5))), 3)) # create additional columns for the vars not missing values
     
     new_prop <- 0.2
     miss_patt_mat <- cbind(m,p)
     colnames(miss_patt_mat) <- c(is_miss, no_miss)
-    # rownames(miss_patt_mat) <- c("nest_age", )
     patt_freq <- c(0.45,0.45,0.1) # missing: age only, fate only, both
-    if(debug & seeed==1){
-      cat("\n\n>> missingness matrix:\n")
-      print(miss_patt_mat)
-      cat("\n>> proportion missing:", new_prop, "\n\n>> frequency of each pattern:", patt_freq)
-    }
+    ### *~*~*~*~* #######
+    # if(debug & seeed==1){
+    #   cat("\n\n>> missingness matrix:\n")
+    #   print(miss_patt_mat)
+    #   cat("\n>> proportion missing:", new_prop, "\n\n>> frequency of each pattern:", patt_freq)
+    # }
     
     new_order <- c(is_miss, no_miss)
-    if(xdebug) cat("\n\n>> reorder columns:", new_order)
+    ### *~*~*~*~* #######
+    # if(xdebug) cat("\n\n>> reorder columns:", new_order)
     dat4amp <- dat4amp %>% select(all_of(new_order)) # reorder the columns to match the matrix
     
     suppressWarnings(amp_out <- mice::ampute(dat4amp, prop = new_prop, patterns = miss_patt_mat, freq = patt_freq))
-    if(xdebug) cat("\n\nCreate new missing values:\n")
-    if(xdebug) print(mice::md.pattern(amp_out$amp, rotate.names = TRUE))
-    # print(missing_tab("amp_out", prVars))
-    # missing_tab("amp_out", prVars)
+    ### *~*~*~*~* #######
+    # if(xdebug) cat("\n\nCreate new missing values:\n")
+    # if(xdebug) print(mice::md.pattern(amp_out$amp, rotate.names = TRUE))
+    
     # 1 = complete; 0 = has missings
     
     wts <- amp_out$weights 
     wts[1,] <- c(0, 0, 0, 0.8, 0.2, rep(0, 8)) # missing age only - what vars contribute
     # wts[3,] <- c(0, 0, 0, 0.8, 0.2, rep(0, 8))
-    if(xdebug){
-      cat("\n>> new weights:\n")
-      print(wts)
-      cat("\n>> to go with the patterns:\n")
-      print(miss_patt_mat)
-    }
+    ### *~*~*~*~* #######
+    # if(xdebug){
+    #   cat("\n>> new weights:\n")
+    #   print(wts)
+    #   cat("\n>> to go with the patterns:\n")
+    #   print(miss_patt_mat)
+    # }
     # what exactly are the weights doing?
     suppressWarnings(amp_out_wt <- mice::ampute(dat4amp, prop = new_prop, patterns = miss_patt_mat, freq = patt_freq,weights = wts))
     
-    if(debug) cat("\n\nCreate more new missing values, with weighted probabilities:\n")
-    if(debug)  print(mice::md.pattern(amp_out_wt$amp, rotate.names = TRUE))
+    ### *~*~*~*~* #######
+    # if(debug) cat("\n\nCreate more new missing values, with weighted probabilities:\n")
+    # if(debug)  print(mice::md.pattern(amp_out_wt$amp, rotate.names = TRUE))
     # missing_tab("amp_out_wt", prVars)
     
     # datList <- ifelse(wt, amp_out_wt, amp_out) # ifelse is not what I need here
@@ -314,8 +252,9 @@ mkSimDat <- function(seeed, nd, vars, facToNum=FALSE, method="amp", wt=TRUE, deb
     
     # str(amp_out_wt)
     # amp_out_wt
-    if(debug) print(str(datList$amp))
-    if (debug) print(class(datList$amp))
+    ### *~*~*~*~* #######
+    # if(debug) print(str(datList$amp))
+    # if (debug) print(class(datList$amp))
     # class(datList)
     if (convFact) datList$amp <- add_fact(dat = datList$amp, facToNum=facToNum, debug=debug) # could probably reference the global debug instead...
     # datList$amp <- datList$amp %>%
@@ -332,16 +271,17 @@ mkSimDat <- function(seeed, nd, vars, facToNum=FALSE, method="amp", wt=TRUE, deb
     fateNA <- sample(x=nd$nest, size = 12, replace = FALSE)
     nd$cam_fate[!is.na(match(nd$nest,fateNA))] = NA
     
-    if (debug){
-      cat("new number missing nest_age:", sum(is.na(nd$nest_age)),
-          "new percent missing nest_age:", sum(is.na(nd$nest_age)) / nrow(nd),
-          "original percent missing:", sum(is.na(ndGLM_scl_all$nest_age)) / nrow(ndGLM_scl_all) )
-      cat("\nnew number missing cam_fate:", sum(is.na(nd$cam_fate)),
-          "new percent missing cam_fate:", sum(is.na(nd$cam_fate)) / nrow(nd),
-          "original percent missing:", sum(is.na(ndGLM_scl_all$cam_fate)) / nrow(ndGLM_scl_all) )
-      
-      return(nd)
-    }
+    # ### *~*~*~*~* #######
+    # if (debug){
+    #   cat("new number missing nest_age:", sum(is.na(nd$nest_age)),
+    #       "new percent missing nest_age:", sum(is.na(nd$nest_age)) / nrow(nd),
+    #       "original percent missing:", sum(is.na(ndGLM_scl_all$nest_age)) / nrow(ndGLM_scl_all) )
+    #   cat("\nnew number missing cam_fate:", sum(is.na(nd$cam_fate)),
+    #       "new percent missing cam_fate:", sum(is.na(nd$cam_fate)) / nrow(nd),
+    #       "original percent missing:", sum(is.na(ndGLM_scl_all$cam_fate)) / nrow(ndGLM_scl_all) )
+    #   
+    # }
+    return(nd)
   }
 }
 
@@ -405,26 +345,25 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
   if (met == "cc"){
     
     # dat <- ampDat[!is.na(ampDat),]
-    if(debug) cat(" complete-case analysis:\n")
+    # ### *~*~*~*~* #######
+    # if(debug) cat(" complete-case analysis:\n")
     # dat1 <- ifelse(met=="cc",ampDat[complete.cases(ampDat),],fullDat) # I forget why this makes a list
     ampDat <- ampDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
     dat1 <- ampDat[complete.cases(ampDat),]
     
-    if(debug) cat("\n\n>> data:\n")
-    if(debug) print(str(dat1))
+    # ### *~*~*~*~* #######
+    # if(debug) cat("\n\n>> data:\n")
+    # if(debug) print(str(dat1))
     for(y in seq_along(mods)){
       fit = glm(as.formula(paste0(resp, mods[y])), data=dat1, family=fam, method=regMet, control=brglmControl(maxit=iter))
       # confint(fit)[-1,]
 
       vals <- cbind(coef(fit)[-1], confint(fit)[-1,]) # confint has 2 columns, so need comma
       # vals <- cbind(vals, rep(-1.0, nrow(vals))) # fmi for complete-case analysis
-      # vals <- data.frame(vals) # why does it need to be a dataframe? oh, maybe bc of filter?
       # also so that numeric stays numeric when you add names?
       rownames(vals) <- names(coef(fit))[-1]
-      # colnames(vals) <-  c("estimate", "2.5 %", "97.5 %", "fmi") # this doesn't work if not a df
       colnames(vals) <-  c("estimate", "2.5 %", "97.5 %") # this doesn't work if not a df
       vmatch <- match(rownames(vals), rownames(ret)) # col 1 of vals is the row names
-      # vmatch <- na.omit(match(rownames(vals), rownames(ret))) # col 1 of vals is the row names
       ret[vmatch, , y]  <- as.matrix(vals)# remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
       if(FALSE){
         ret
@@ -475,24 +414,16 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       # dimnames(metList)[[2]][7] <- paste(inters, collapse=".")
       names(metList)[7] <- inter
       metList <- metList[!is.na(metList)]
-      # cat(met,"-", (metList),";")
-      cat("\n",met,"-")
-      print(metList)
+      
+      ## *~*~*~*~*
+      # cat("\n",met,"-")
+      # print(metList)
       # cat("\n")
-      # frmla <- vector("list", ncol(ampDat))
-      # names(ampDat)
-      # x <- names(ampDat)[1]
-      # paste(x, "~", 
-      # ampDat[x]
-      # ampDat[-c(x)]
-            # paste(names(ampDat[-x]), collapse="+")
-      # frmla <- sapply(names(ampDat), function(x) paste(x, "~", paste(names(ampDat)!=x)))
+      
       frmla <- lapply(form_list[[y]][[met]], function(x) as.formula(paste(x[[1]], "~", x[[2]])))
-      ### already has names??
-      # names(frmla)
-      # names(frmla) <- names(ampDat)
-      if(xdebug) cat("\nmice formulas:\n")
-      if(xdebug) print(frmla)
+      ## *~*~*~*~*
+      # if(xdebug) cat("\nmice formulas:\n")
+      # if(xdebug) print(frmla)
       
       # 3: In all(metList) : coercing argument of type 'character' to logical
       # if(is.na(all(metList))) metList=NULL # this is incorrect I think
@@ -539,27 +470,31 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       #                   .default = mice::mice(ampDat, method=metList, m=m, print=FALSE)
       # )
       if(impplot) visImp(imp) 
-      if(debug) cat("\n>> fitting model", mods[y])
+      ## *~*~*~*~*
+      # if(debug) cat("\n>> fitting model", mods[y])
       fit = with(imp,
                  glm( as.formula( paste0(resp, mods[y]) ),
                       family=fam,
                       method = regMet,
                       control=brglmControl(maxit=iter)
       ))
-      if(debug) cat("\n>> pooling model fit\n")
+      ## *~*~*~*~*
+      # if(debug) cat("\n>> pooling model fit\n")
       pool = summary(mice::pool(fit), "all", conf.int=TRUE, exponentiate=TRUE)
       pool <- pool %>% filter(term %in% vars)
       vmatch <- match(pool[,1], rownames(ret)) # col 1 of vals is the row names
       # ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %", "fmi")])
       ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %")])
-      if(xdebug) {
-        cat("\n\n>> pooled model fit:\n")
-        str(pool)
-      }
+      ## *~*~*~*~*
+      # if(xdebug) {
+      #   cat("\n\n>> pooled model fit:\n")
+      #   str(pool)
+      # }
     }
   }
-  if(xdebug) cat("\n\nret:\n")
-  if (xdebug) print(str(ret))
+      ## *~*~*~*~*
+  # if(xdebug) cat("\n\nret:\n")
+  # if (xdebug) print(str(ret))
   return(ret)
 }
 
@@ -667,8 +602,9 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
                         names(mods)
                         )
   # if(debug) cat("res matrix is formatted as follows:",str(res))
-  if(xdebug) cat("\n\n>>>>> res matrix is formatted as follows:\n")
-  if(xdebug) print(str(res))
+  ## *~*~*~*~*
+  # if(xdebug) cat("\n\n>>>>> res matrix is formatted as follows:\n")
+  # if(xdebug) print(str(res))
   # datNA <- datNA %>% select(all_of(col_sel))
   ### does this need to be here?
   # fullDat <- fullDat %>% select(all_of(col_sel))
@@ -696,7 +632,8 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
     # datNA1 <- datNA
     # for(x in seq_along(mets)){
     for(x in mets){ # this makes it match by name, not just by index
-      if (xdebug) cat("\n\n>>>> method:", x)
+      ## *~*~*~*~*
+      # if (xdebug) cat("\n\n>>>> method:", x)
       
       vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, form_list =forms, vars=vars, mods=mods, met=x, debug = debug,m=m, xdebug=xdebug, impplot=ipl)
       if(FALSE){
@@ -713,29 +650,32 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
         res["nest_age", x, , "estimate","m1"] <- c(-2, -2, -2)
         res["nest_age", x, , "2.5 %","m1"] 
       }
-      if(xdebug){ 
-        cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
-        cat(sprintf("\n>> output of mkImpSim for all models for run %s and method %s:\n", run, x))
-        str(vals)
-        }
+      ## *~*~*~*~*
+      # if(xdebug){ 
+      #   cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+      #   cat(sprintf("\n>> output of mkImpSim for all models for run %s and method %s:\n", run, x))
+      #   str(vals)
+      #   }
       # vmatch <- match(vals[,1], rownames(res)) # col 1 of vals is the row names
       vmatch <- match(rownames(vals), rownames(res)) # col 1 of vals is the row names
       # vals <- as.matrix(vals[,-1]) # remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
       # dim(res[vmatch, x, r,,])  
       res[vmatch, x, run,,]  <- vals
-      if(xdebug){ 
-        cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
-        cat("\n>> res matrix filled in:\n")
-        # print(res[vmatch,x,r,])
-        # print(res[,x,r,])
-        print(res[,,run,,])
-      }
+      ## *~*~*~*~*
+      # if(xdebug){ 
+      #   cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+      #   cat("\n>> res matrix filled in:\n")
+      #   # print(res[vmatch,x,r,])
+      #   # print(res[,x,r,])
+      #   print(res[,,run,,])
+      # }
     }
-    if(debug & run==nruns){
-      cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
-      cat("\n>>>> full res matrix:\n")
-      print(res[,,,,])
-    }
+    ## *~*~*~*~*
+    # if(debug & run==nruns){
+    #   cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+    #   cat("\n>>>> full res matrix:\n")
+    #   print(res[,,,,])
+    # }
     # used x bc m already exists, so for testing it was confusing. doesn't matter once fxn works.
     # res[vmatch ,x,,]
     # res[,x,r,]
@@ -853,12 +793,13 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
                             as.character(biasVals),
                             names(mods)
     )
-    if (xdebug){
-      cat("\n>> empty bias matrix:\n")
-      print(bias) 
-      cat("\n>> impDat:\n")
-      str(impDat)
-    }
+    ## *~*~*~*~*
+    # if (xdebug){
+    #   cat("\n>> empty bias matrix:\n")
+    #   print(bias) 
+    #   cat("\n>> impDat:\n")
+    #   str(impDat)
+    # }
     # for (v in seq_along(vars)){ # v = var names, not indices
     for (v in vars){ # v = var names, not indices
       # avg[v] <- apply(dat[vars[v], , ,], c(1,3), mean, na.rm=TRUE)
@@ -922,11 +863,12 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       bias[v, , "RMSE",] <- sqrt((avg[,"estimate"] - true)^2)
       bias[v, , "SD",] <- sdev[,"estimate"]
       
-      if (xdebug) cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
-      if (xdebug) cat("\n\n>> true param values:\n")
-      if (xdebug) print(trueVals)
-      if (xdebug) cat("\n\n>> bias values:\n")
-      if (xdebug) print(bias)
+      ## *~*~*~*~*
+      # if (xdebug) cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+      # if (xdebug) cat("\n\n>> true param values:\n")
+      # if (xdebug) print(trueVals)
+      # if (xdebug) cat("\n\n>> bias values:\n")
+      # if (xdebug) print(bias)
       # biasfile <- paste0(params$hdir, sprintf("%sout/bias_vals_%s_%s_%s_.rds", hdir,r, names(mods4sim)[z], suffix))
       # biasfile <-  sprintf("%sout/%s/bias_vals_%s_%s_%s_.rds", hdir,now_,r, names(mods4sim)[z], suffix)
       cat(sprintf("\n>>> saving bias values for model %s with response %s for variable %s", 
