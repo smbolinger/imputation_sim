@@ -440,15 +440,18 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       tryCatch(
         expr = {
           imp <- eval(parse(text=impCall))
+          skiptoNext <- FALSE
           # if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
         },
         error = function(e){
           cat("ERROR:", conditionMessage(e), "\n")
+          skiptoNext <- TRUE
           # imp <- list(imp=NA)
           # ret[,,y]
           # continue()
         }
       )
+      if(skiptoNext) next
       
       # tryCatchLog::tryCatchLog(
       #   imp <- eval(parse(text=impCall))
@@ -487,7 +490,8 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       #                   met=="passive" ~ mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE),
       #                   .default = mice::mice(ampDat, method=metList, m=m, print=FALSE)
       # )
-      if(impplot) visImp(imp) 
+      ## *~*~*~*~*
+      # if(impplot) visImp(imp) 
       ## *~*~*~*~*
       # if(debug) cat("\n>> fitting model", mods[y])
       fit = with(imp,
