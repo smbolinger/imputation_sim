@@ -154,7 +154,7 @@ mkMetList <- function(met, dat, int=NULL, debug=FALSE){
       # interTrue & met=="passive" ~ paste("~I(",int,")"),
                             met =="default" ~ NA,
                             met == "passive" ~ NA,
-                            # met=="stratify" & c=="species" ~ NA, # this should still exist, but take species out of formula
+                            met=="stratify" & c=="species" ~ NA, # this should still exist, but take species out of formula?
                             # met =="default" ~ "",
                             interTrue & met !="passive" ~ NA,
                             c=="inter" ~ NA,
