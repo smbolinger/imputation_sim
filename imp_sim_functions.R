@@ -1,7 +1,7 @@
 ########################################################################################
 ###### IMPORT FUNCTIONS ################################################################
 ########################################################################################
-
+options(include.full.call.stack = FALSE)               # or configure it globally
 # source("missingness_tab.R")
 debugging <- FALSE # for uickly setting values when working in the file with the functions
 
@@ -435,7 +435,22 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
                            met=="passive" ~ "mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)",
                            .default="mice::mice(ampDat, method=metList, m=m, print=FALSE)"
       )
-      imp <- eval(parse(text=impCall))
+      tryCatch(
+        expr = {
+          imp <- eval(parse(text=impCall))
+          if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
+        },
+        error = function(e){
+          cat("ERROR:", conditionMessage(e), "\n")
+          # imp <- list(imp=NA)
+          # ret[,,y]
+          # continue()
+        }
+      )
+      
+      # tryCatchLog::tryCatchLog(
+      #   imp <- eval(parse(text=impCall))
+      # )
       # # if (met=="passive") {
       # #   # ampDat[inter] <- paste(inters, collapse=".")
       #   # inter <- paste(inters, collapse=".")
@@ -542,8 +557,9 @@ if(FALSE){
   resp <- r
   fullDat <- dat4sim
   run <- 1
-  datNA <- 
+  datNA <- ampDat
   mods <- mods4sim
+  forms <- form_list
   col_sel <- col_list
 # (nd = fullDat, seeed = run, vars=vars, method = "amp", wt = TRUE, xdebug=xdebug, debug = debug, convFact = TRUE)
   # nruns=10
@@ -569,7 +585,7 @@ if(FALSE){
     # x = met
     # vals <- imp_sim
     # run <- 9
-par <- list(nrun=3, 
+par <- list(nrun=5, 
             hdir="/home/wodehouse/projects/fate_glm/",
             deb=TRUE,
             xdeb=TRUE, # for obsessively checking things - not useful for normal debugging & lots of text output 
@@ -681,8 +697,24 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
     # res[vmatch ,x,,]
     # res[,x,r,]
     # 
+    if(run %% 100 == 0){
+    # if(run %% 4 == 0){
+      begn <- run-100
+      endd <- run-0
+      nowtime <- format(Sys.time(), "%d%b%H%M")
+      fname <- paste(sprintf("out/runs%sto%s_%s.rds", begn, endd, nowtime))
+      saveRDS(res[,,begn:endd,,], fname)
+    }
+    if(FALSE){
+      run <- run + 1
+      res[,,c(begn,endd),,]
+      resss <- readRDS(fname)
+      resss
+    }
     ### print memory usage every 10 runs:
-    if(run %% 10 == 0) print(gc()) # modulo operator %%
+    ## *~*~*~*~*
+    # if(run %% 10 == 0) print(gc()) # modulo operator %%
+    
     # res[, 1, r,] <- as.matrix(mkImpSim(dat=datNA, resp=resp, vars=vars, mod=mod, met="pmm"))
     # res[, 2, r,] <- as.matrix(mkImpSim(dat=datNA, resp=resp, vars=vars, mod=mod, met="rf"))
     # res[, 3, r,] <- as.matrix(mkImpSim(dat=datNA, resp=resp, vars=vars, mod=mod, met="cart"))
