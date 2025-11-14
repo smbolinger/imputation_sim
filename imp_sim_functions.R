@@ -440,18 +440,19 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       tryCatch(
         expr = {
           imp <- eval(parse(text=impCall))
-          skiptoNext <- FALSE
+          # skiptoNext <- FALSE
           # if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
         },
         error = function(e){
           cat("ERROR:", conditionMessage(e), "\n")
-          skiptoNext <- TRUE
+          next
+          # skiptoNext <- TRUE
           # imp <- list(imp=NA)
           # ret[,,y]
           # continue()
         }
       )
-      if(skiptoNext) next
+      # if(skiptoNext) next
       
       # tryCatchLog::tryCatchLog(
       #   imp <- eval(parse(text=impCall))
