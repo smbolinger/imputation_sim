@@ -366,19 +366,21 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       colnames(vals) <-  c("estimate", "2.5 %", "97.5 %") # this doesn't work if not a df
       vmatch <- match(rownames(vals), rownames(ret)) # col 1 of vals is the row names
       ret[vmatch, , y]  <- as.matrix(vals)# remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
-      if(FALSE){
-        ret
-        vals
-        rownames(ret)
-        rownames(vals)
-        vmatch
-        y=1
-        vals
-        ret[vmatch,,y]
-        ret
-        y=y+1
-        names(coef(fit))
-      }
+    ##################
+      # if(FALSE){
+      #   ret
+      #   vals
+      #   rownames(ret)
+      #   rownames(vals)
+      #   vmatch
+      #   y=1
+      #   vals
+      #   ret[vmatch,,y]
+      #   ret
+      #   y=y+1
+      #   names(coef(fit))
+      # }
+    ##################
     }
   } else {
     # ampDat <- aDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
@@ -438,7 +440,7 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       tryCatch(
         expr = {
           imp <- eval(parse(text=impCall))
-          if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
+          # if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
         },
         error = function(e){
           cat("ERROR:", conditionMessage(e), "\n")
@@ -549,52 +551,54 @@ visImp <- function(imp){
 ###### RUN SIMULATION ###################################################################
 ########################################################################################
 
-if(FALSE){
-  # nruns <- params$nrun
-  # debug <- params$deb
-  # xdebug <- params$xdeb
-  # ipl <- params$ipl
-  resp <- r
-  fullDat <- dat4sim
-  run <- 1
-  datNA <- ampDat
-  mods <- mods4sim
-  forms <- form_list
-  col_sel <- col_list
-# (nd = fullDat, seeed = run, vars=vars, method = "amp", wt = TRUE, xdebug=xdebug, debug = debug, convFact = TRUE)
-  # nruns=10
-  x <- "default"
-  mod=modList[1]
-  ndat=ndGLM_scl_cc
-  mets <- c("default","pmm", "rf", "cart", "caliber","cc")
-  mets <- met_list
-  # does not include the reference levels:
-  # vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
-  vars <- var_list
-  mLists <- metLists
-  # datNA <- dat
-  # datNA <- ndGLM_scl_cc
-  # debug=TRUE
-  # datNA <- ampDat
-  # seed=82985
+##################
+# if(FALSE){
+#   # nruns <- params$nrun
+#   # debug <- params$deb
+#   # xdebug <- params$xdeb
+#   # ipl <- params$ipl
+#   resp <- r
+#   fullDat <- dat4sim
+#   run <- 1
+#   datNA <- ampDat
+#   mods <- mods4sim
+#   forms <- form_list
+#   col_sel <- col_list
+# # (nd = fullDat, seeed = run, vars=vars, method = "amp", wt = TRUE, xdebug=xdebug, debug = debug, convFact = TRUE)
+#   # nruns=10
+#   x <- "default"
+#   mod=modList[1]
+#   ndat=ndGLM_scl_cc
+#   mets <- c("default","pmm", "rf", "cart", "caliber","cc")
+#   mets <- met_list
+#   # does not include the reference levels:
+#   # vars= c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesLETE", "speciesLETE:nest_age")
+#   vars <- var_list
+#   mLists <- metLists
+#   # datNA <- dat
+#   # datNA <- ndGLM_scl_cc
+#   # debug=TRUE
+#   # datNA <- ampDat
+#   # seed=82985
+# 
+#     # run=1
+#     # m=1
+#     # x=1
+#     # x = "rf"
+#     # x = met
+#     # vals <- imp_sim
+#     # run <- 9
+# par <- list(nrun=5, 
+#             hdir="/home/wodehouse/projects/fate_glm/",
+#             deb=TRUE,
+#             xdeb=TRUE, # for obsessively checking things - not useful for normal debugging & lots of text output 
+#             ipl=FALSE,
+#             lin=FALSE,
+#             m=5)
+# # run =  run + 1
+# }
 
-    # run=1
-    # m=1
-    # x=1
-    # x = "rf"
-    # x = met
-    # vals <- imp_sim
-    # run <- 9
-par <- list(nrun=5, 
-            hdir="/home/wodehouse/projects/fate_glm/",
-            deb=TRUE,
-            xdeb=TRUE, # for obsessively checking things - not useful for normal debugging & lots of text output 
-            ipl=FALSE,
-            lin=FALSE,
-            m=5)
-# run =  run + 1
-}
-
+      ##################
 # for some reason, this can't find the global vars in fate_GLM1 when I knit that document.
 # so, pass them all as arguments? but they already are...
 # arguments: function to make sim data, real data, response, predictors, model, nruns
@@ -628,12 +632,13 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
   cat(sprintf(">>> running simulation %s times\n", nruns))
   for(run in 1:nruns){
     cat(run)
-    if(debug){
-      cat("\n\n********************************************************************************************")
-      cat(sprintf("\n//////// RUN %s ////////////////////////////////////////////////////////////////////////////\n", run))
-      cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
-      cat("\n\n********************************************************************************************")
-    }
+    ## *~*~*~*~*
+    # if(debug){
+    #   cat("\n\n********************************************************************************************")
+    #   cat(sprintf("\n//////// RUN %s ////////////////////////////////////////////////////////////////////////////\n", run))
+    #   cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+    #   cat("\n\n********************************************************************************************")
+    # }
     # ndat = nDat
     # if(missing(datNA)) datNA <- mkSimDat(ndat)
     # if the complete data was passed as an argument, add the NAs; otherwise, should be data with NA
@@ -641,9 +646,11 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
     # MAKE DATA WITHIN THE RUN_SIM FUNCTION?
     # datNA <- mkSimDat(datNA, debug = debug, convFact = TRUE, fcToNum=fcToNum)$amp
     datNA <- mkSimDat(nd = fullDat, seeed = run, vars=vars, method = "amp", wt = TRUE, xdebug=xdebug, debug = debug, convFact = TRUE)
-    if(FALSE ){
-      run=run+1
-    }
+    ##################
+    # if(FALSE ){
+    #   run=run+1
+    # }
+    ##################
     datNA <- datNA$amp
     # datNA <- datNA %>% select(all_of(col_sel))
     # datNA1 <- datNA
@@ -653,20 +660,21 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
       # if (xdebug) cat("\n\n>>>> method:", x)
       
       vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, form_list =forms, vars=vars, mods=mods, met=x, debug = debug,m=m, xdebug=xdebug, impplot=ipl)
-      if(FALSE){
-        vals
-        rownames(res)
-        print(vals) # before, had the var names...
-        vals
-        vals[,,"m16"]
-        dim(vals)
-        dimnames(vals)
-        dimnames(res)
-        vals[1,,]
-        res["nest_age", x, , "estimate","m1"] 
-        res["nest_age", x, , "estimate","m1"] <- c(-2, -2, -2)
-        res["nest_age", x, , "2.5 %","m1"] 
-      }
+      ##################
+      # if(FALSE){
+      #   vals
+      #   rownames(res)
+      #   print(vals) # before, had the var names...
+      #   vals
+      #   vals[,,"m16"]
+      #   dim(vals)
+      #   dimnames(vals)
+      #   dimnames(res)
+      #   vals[1,,]
+      #   res["nest_age", x, , "estimate","m1"] 
+      #   res["nest_age", x, , "estimate","m1"] <- c(-2, -2, -2)
+      #   res["nest_age", x, , "2.5 %","m1"] 
+      # }
       ## *~*~*~*~*
       # if(xdebug){ 
       #   cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
@@ -674,6 +682,7 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
       #   str(vals)
       #   }
       # vmatch <- match(vals[,1], rownames(res)) # col 1 of vals is the row names
+      ##################
       vmatch <- match(rownames(vals), rownames(res)) # col 1 of vals is the row names
       # vals <- as.matrix(vals[,-1]) # remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
       # dim(res[vmatch, x, r,,])  
@@ -705,12 +714,14 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
       fname <- paste(sprintf("out/runs%sto%s_%s.rds", begn, endd, nowtime))
       saveRDS(res[,,begn:endd,,], fname)
     }
-    if(FALSE){
-      run <- run + 1
-      res[,,c(begn,endd),,]
-      resss <- readRDS(fname)
-      resss
-    }
+    ##################
+    # if(FALSE){
+    #   run <- run + 1
+    #   res[,,c(begn,endd),,]
+    #   resss <- readRDS(fname)
+    #   resss
+    # }
+    ##################
     ### print memory usage every 10 runs:
     ## *~*~*~*~*
     # if(run %% 10 == 0) print(gc()) # modulo operator %%
@@ -850,6 +861,7 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       # # dd <- dim(impDat)
       # # which(dim(impDat))
       # marg <- c(which(dimnames(impDat) %in% vars), which(dimnames(impDat) %in% biasVals))
+      # impDat[v, , , ,] 
       avg <- apply(impDat[v, , , ,],MARGIN=c(1,3),FUN = mean, na.rm=TRUE)
       # avg
       sdev <- apply(impDat[v, , , ,],MARGIN=c(1,3),FUN = sd, na.rm=TRUE)
