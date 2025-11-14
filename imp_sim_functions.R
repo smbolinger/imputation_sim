@@ -445,7 +445,8 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
         },
         error = function(e){
           cat("ERROR:", conditionMessage(e), "\n")
-          next
+          # next
+          return(NULL)
           # skiptoNext <- TRUE
           # imp <- list(imp=NA)
           # ret[,,y]
