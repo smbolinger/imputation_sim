@@ -662,13 +662,14 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
     # datNA <- datNA %>% select(all_of(col_sel))
     # datNA1 <- datNA
     # for(x in seq_along(mets)){
-    for(x in mets){ # this makes it match by name, not just by index
+    # for(x in mets){ # this makes it match by name, not just by index
+    for(x in seq_along(mets)){ # does matching by index help the trycatch statement?
       ## *~*~*~*~*
       # if (xdebug) cat("\n\n>>>> method:", x)
       
       tryCatch(
         expr = {
-          vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, form_list =forms, vars=vars, mods=mods, met=x, debug = debug,m=m, xdebug=xdebug, impplot=ipl)
+          vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, form_list =forms, vars=vars, mods=mods, met=mets[x], debug = debug,m=m, xdebug=xdebug, impplot=ipl)
           # imp <- eval(parse(text=impCall))
           # skiptoNext <- FALSE
           # if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
@@ -683,7 +684,7 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
           # continue()
         }
       )
-      vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, form_list =forms, vars=vars, mods=mods, met=x, debug = debug,m=m, xdebug=xdebug, impplot=ipl)
+      # vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, form_list =forms, vars=vars, mods=mods, met=mets[x], debug = debug,m=m, xdebug=xdebug, impplot=ipl)
       ##################
       # if(FALSE){
       #   vals
@@ -710,7 +711,7 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
       vmatch <- match(rownames(vals), rownames(res)) # col 1 of vals is the row names
       # vals <- as.matrix(vals[,-1]) # remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
       # dim(res[vmatch, x, r,,])  
-      res[vmatch, x, run,,]  <- vals
+      res[vmatch, mets[x], run,,]  <- vals
       ## *~*~*~*~*
       # if(xdebug){ 
       #   cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
