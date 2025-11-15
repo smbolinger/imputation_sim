@@ -666,6 +666,7 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
     for(x in seq_along(mets)){ # does matching by index help the trycatch statement?
       ## *~*~*~*~*
       # if (xdebug) cat("\n\n>>>> method:", x)
+      skiptoNext <- FALSE
       
       tryCatch(
         expr = {
@@ -675,15 +676,17 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
           # if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
         },
         error = function(e){
-          cat("ERROR:", conditionMessage(e), "\n")
+          cat("\nERROR:", conditionMessage(e), "\n")
           next
           # return(NULL)
           # skiptoNext <- TRUE
+          skiptoNext <<- TRUE  # superassignment operator- not sure if necessary
           # imp <- list(imp=NA)
           # ret[,,y]
           # continue()
         }
       )
+      if(skiptoNext) next
       # vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, form_list =forms, vars=vars, mods=mods, met=mets[x], debug = debug,m=m, xdebug=xdebug, impplot=ipl)
       ##################
       # if(FALSE){
