@@ -437,22 +437,23 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
                            met=="passive" ~ "mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)",
                            .default="mice::mice(ampDat, method=metList, m=m, print=FALSE)"
       )
-      tryCatch(
-        expr = {
-          imp <- eval(parse(text=impCall))
-          # skiptoNext <- FALSE
-          # if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
-        },
-        error = function(e){
-          cat("ERROR:", conditionMessage(e), "\n")
-          # next
-          return(NULL)
-          # skiptoNext <- TRUE
-          # imp <- list(imp=NA)
-          # ret[,,y]
-          # continue()
-        }
-      )
+      imp <- eval(parse(text=impCall))
+      # tryCatch(
+      #   expr = {
+          # imp <- eval(parse(text=impCall))
+      #     # skiptoNext <- FALSE
+      #     # if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
+      #   },
+      #   error = function(e){
+      #     cat("ERROR:", conditionMessage(e), "\n")
+      #     # next
+      #     return(NULL)
+      #     # skiptoNext <- TRUE
+      #     # imp <- list(imp=NA)
+      #     # ret[,,y]
+      #     # continue()
+      #   }
+      # )
       # if(skiptoNext) next
       
       # tryCatchLog::tryCatchLog(
@@ -665,6 +666,23 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
       ## *~*~*~*~*
       # if (xdebug) cat("\n\n>>>> method:", x)
       
+      tryCatch(
+        expr = {
+          vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, form_list =forms, vars=vars, mods=mods, met=x, debug = debug,m=m, xdebug=xdebug, impplot=ipl)
+          # imp <- eval(parse(text=impCall))
+          # skiptoNext <- FALSE
+          # if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
+        },
+        error = function(e){
+          cat("ERROR:", conditionMessage(e), "\n")
+          next
+          # return(NULL)
+          # skiptoNext <- TRUE
+          # imp <- list(imp=NA)
+          # ret[,,y]
+          # continue()
+        }
+      )
       vals <- mkImpSim(ampDat=datNA,cols=col_sel,resp=resp, form_list =forms, vars=vars, mods=mods, met=x, debug = debug,m=m, xdebug=xdebug, impplot=ipl)
       ##################
       # if(FALSE){
