@@ -147,7 +147,7 @@ for(run in 1:params$nrun){
     begn <- run-j
     endd <- run-0
     nowtime <- format(Sys.time(), "%d%b%H%M")
-    fname <- paste(sprintf("out/runs%sto%s_%s.rds", begn, endd, nowtime))
+    fname <- paste(sprintf("out/runs%sto%s_resp%s_seed%s_%s.rds", begn, endd, resp, seed, nowtime))
     saveRDS(res[,,begn:endd,,], fname)
     cat(sprintf(">>>>>> saved runs %s to %s to file!", begn, endd))
   }
