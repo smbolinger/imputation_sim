@@ -58,19 +58,19 @@ add_fact <- function(dat, facToNum=FALSE, debug=FALSE){
       rename(cfate = cam_fate,
              spp   = species) %>%
       mutate( cam_fate = case_match(as.character(cfate),
-                                "H"  ~ 0,
-                                "F"  ~ 1,
-                                "D"  ~ 2,
-                                "S"  ~ 3,
-                                "A"  ~ 4,
-                                "Hu" ~ 5,
-                                "Ca" ~ 6,
-                                "U"  ~ 7
-             ),
-             species = ifelse(spp=="LETE", 0, 1),
-             isu=as.character(is_u),
-             HFmis = as.character(HF_mis)
-             )
+                                    "H"  ~ 0,
+                                    "F"  ~ 1,
+                                    "D"  ~ 2,
+                                    "S"  ~ 3,
+                                    "A"  ~ 4,
+                                    "Hu" ~ 5,
+                                    "Ca" ~ 6,
+                                    "U"  ~ 7
+      ),
+      species = ifelse(spp=="LETE", 0, 1),
+      isu=as.character(is_u),
+      HFmis = as.character(HF_mis)
+      )
   } else{
     dat <- dat %>%
       mutate(across(c(cam_fate, species), as.factor))
@@ -132,19 +132,19 @@ mkMetList <- function(met, dat, int=NULL, debug=FALSE){
   is_bin <- names(dat)[sapply(dat, function(x) length(levels(x)))==2]
   is_cat <- names(dat)[sapply(dat, function(x) length(levels(x)))>2]
   
-
+  
   for(c in col_sel){
     if(met=="caliber"){
       if(c %in% catList ) met1 = "rfcat" else met1 = "rfcont"
     }else if(met %in% c("default.int", "pmm.int")){
       met1 <- str_extract(met, pattern = "\\w+(?=.)") # everything up until the period
-    # }else if(met == "passive.int"){
+      # }else if(met == "passive.int"){
     }else if(met == "passive" | met=="stratify"){
       # met1 <- ""
       # met1 <- ifelse(is.numeric())
       met1 <- case_when(c %in% is_num ~ "pmm",
-                         c %in% is_bin ~ "logreg",
-                         c %in% is_cat ~ "polyreg")
+                        c %in% is_bin ~ "logreg",
+                        c %in% is_cat ~ "polyreg")
       # met2 <- paste("~I(", int,")")
     } else {met1 <- met}
     
@@ -152,16 +152,16 @@ mkMetList <- function(met, dat, int=NULL, debug=FALSE){
     # make NAs so that those columns can be dropped later
     metList[c] <- case_when(
       # interTrue & met=="passive" ~ paste("~I(",int,")"),
-                            met =="default" ~ NA,
-                            met == "passive" ~ NA,
-                            met=="stratify" & c=="species" ~ NA, # this should still exist, but take species out of formula?
-                            # met =="default" ~ "",
-                            interTrue & met !="passive" ~ NA,
-                            c=="inter" ~ NA,
-                            !interTrue & c%in%colNA ~ met1,
-                            .default = ""
-                            )
-
+      met =="default" ~ NA,
+      met == "passive" ~ NA,
+      met=="stratify" & c=="species" ~ NA, # this should still exist, but take species out of formula?
+      # met =="default" ~ "",
+      interTrue & met !="passive" ~ NA,
+      c=="inter" ~ NA,
+      !interTrue & c%in%colNA ~ met1,
+      .default = ""
+    )
+    
   }
   return(metList)
 }
@@ -184,6 +184,7 @@ if (FALSE){
 
 # mkSimDat <- function(nd,col_sel, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
 mkSimDat <- function(seeed, nd, vars, facToNum=FALSE, method="amp", wt=TRUE, debug=FALSE, xdebug=FALSE, convFact=FALSE){
+  # cat("mkSimDat seed=", seeed)
   if(method=="amp"){
     dat4amp <- add_dummy(nd, debug=debug)
     set.seed(seed=seeed)
@@ -358,7 +359,7 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
     for(y in seq_along(mods)){
       fit = glm(as.formula(paste0(resp, mods[y])), data=dat1, family=fam, method=regMet, control=brglmControl(maxit=iter))
       # confint(fit)[-1,]
-
+      
       vals <- cbind(coef(fit)[-1], confint(fit)[-1,]) # confint has 2 columns, so need comma
       # vals <- cbind(vals, rep(-1.0, nrow(vals))) # fmi for complete-case analysis
       # also so that numeric stays numeric when you add names?
@@ -366,7 +367,7 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       colnames(vals) <-  c("estimate", "2.5 %", "97.5 %") # this doesn't work if not a df
       vmatch <- match(rownames(vals), rownames(ret)) # col 1 of vals is the row names
       ret[vmatch, , y]  <- as.matrix(vals)# remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
-    ##################
+      ##################
       # if(FALSE){
       #   ret
       #   vals
@@ -380,7 +381,7 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       #   y=y+1
       #   names(coef(fit))
       # }
-    ##################
+      ##################
     }
   } else {
     # ampDat <- aDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
@@ -440,7 +441,7 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       imp <- eval(parse(text=impCall))
       # tryCatch(
       #   expr = {
-          # imp <- eval(parse(text=impCall))
+      # imp <- eval(parse(text=impCall))
       #     # skiptoNext <- FALSE
       #     # if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
       #   },
@@ -502,7 +503,7 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
                       family=fam,
                       method = regMet,
                       control=brglmControl(maxit=iter)
-      ))
+                 ))
       ## *~*~*~*~*
       # if(debug) cat("\n>> pooling model fit\n")
       pool = summary(mice::pool(fit), "all", conf.int=TRUE, exponentiate=TRUE)
@@ -517,7 +518,7 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       # }
     }
   }
-      ## *~*~*~*~*
+  ## *~*~*~*~*
   # if(xdebug) cat("\n\nret:\n")
   # if (xdebug) print(str(ret))
   return(ret)
@@ -541,7 +542,7 @@ visImp <- function(imp){
   denPl <- mice::densityplot(imp)
   # print(denPl)
   
-    
+  
   imp40 <- mice.mids(imp, maxit=35, print=F)
   # plot(imp40)
   pl40 <- mice:::plot.mids(imp40, layout=c(4,2))
@@ -605,18 +606,18 @@ visImp <- function(imp){
 # # run =  run + 1
 # }
 
-      ##################
+##################
 # for some reason, this can't find the global vars in fate_GLM1 when I knit that document.
 # so, pass them all as arguments? but they already are...
 # arguments: function to make sim data, real data, response, predictors, model, nruns
 runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=FALSE){
-   m=par$m
-   nruns=par$nrun
-   debug = par$deb
-   xdebug=par$xdeb
-   # ipl   = par$impPlot
-   ipl   = par$ipl
-   mets <- unlist(dimnames(mLists)[3])
+  m=par$m
+  nruns=par$nrun
+  debug = par$deb
+  xdebug=par$xdeb
+  # ipl   = par$impPlot
+  ipl   = par$ipl
+  mets <- unlist(dimnames(mLists)[3])
   
   # res <- array(NA, dim = c(length(vars), length(mets), nruns, 4, length(mods)))
   res <- array(NA, dim = c(length(vars), length(mets), nruns, 3, length(mods)))
@@ -628,7 +629,7 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
                         # c("estimate", "2.5 %","97.5 %","fmi"),
                         c("estimate", "2.5 %","97.5 %"),
                         names(mods)
-                        )
+  )
   # if(debug) cat("res matrix is formatted as follows:",str(res))
   ## *~*~*~*~*
   # if(xdebug) cat("\n\n>>>>> res matrix is formatted as follows:\n")
@@ -735,7 +736,7 @@ runSim <- function(fullDat, col_sel, resp, vars, mods,forms, mLists,par,fcToNum=
     # res[,x,r,]
     # 
     if(run %% 100 == 0){
-    # if(run %% 4 == 0){
+      # if(run %% 4 == 0){
       begn <- run-100
       endd <- run-0
       nowtime <- format(Sys.time(), "%d%b%H%M")
@@ -850,7 +851,7 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
     # trueVals
     # vars
     # }
-  # mList <- modList[c(1, 8, 16)]
+    # mList <- modList[c(1, 8, 16)]
     # for (v in vars){ # v = var names, not indices
     # avg <- list()
     # bias <- array(NA, dim = c(length(vars), length(mets), length(biasVals) ) )
@@ -909,7 +910,7 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       # impDat[v,1,,1]
       # impDat[]
       # mean(impDat[v,1,,1]) # this is the mean you are taking, but applied over all methods (dim 2) & parameters (dim 4)
-                           # for a given variable, these are dim 1 and dim 3.
+      # for a given variable, these are dim 1 and dim 3.
       # mean(impDat[v,"pmm",,"estimate"]) # This is the same
       
       # mean(impDat[v,"pmm",,"2.5 %"]) # Second value
