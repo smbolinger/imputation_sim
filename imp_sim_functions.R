@@ -392,9 +392,9 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       metList <- metLists[resp,,met,y]
       # metLists
       # names(metList)
-      ampDat <- ampDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
+      ampDat <- ampDat %>% select(all_of(cols)) %>% droplevels() # need to select the cols that are relevant for mod?
       
-      # metList <- metList[!is.na(metList), drop=F]
+      # metList <- metList[!is.na(metList), drop=F] 
       # dimnames(metList)
       # if(length(metList)==0) metList=NULL
       # if(metList=='') metList=NULL
