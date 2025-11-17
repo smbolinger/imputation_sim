@@ -118,7 +118,7 @@ for (seed in params$seeds){
   # cat("seed=",params$seed, " - ")
   for(run in 1:params$nrun){
     cat(run)
-    datNA <- mkSimDat(nd = dat4sim, seeed = run+params$seed, vars=vars, method = "amp", wt = TRUE, xdebug=params$xdeb, debug = params$deb, convFact = TRUE)
+    datNA <- mkSimDat(nd = dat4sim, seeed = run+seed, vars=vars, method = "amp", wt = TRUE, xdebug=params$xdeb, debug = params$deb, convFact = TRUE)
     datNA <- datNA$amp
     
     for(x in seq_along(mets)){ # does matching by index help the trycatch statement?
@@ -168,7 +168,7 @@ for (seed in params$seeds){
       begn <- run-params$j
       endd <- run-0
       nowtime <- format(Sys.time(), "%d%b%H%M")
-      fname <- paste(sprintf("out/runs%sto%s_resp%s_seed%s_%s.rds", begn, endd, params$resp, params$seed, nowtime))
+      fname <- paste(sprintf("out/runs%sto%s_resp%s_seed%s_%s.rds", begn, endd, params$resp, seed, nowtime))
       saveRDS(res[,,begn:endd,,], fname)
       cat(sprintf("\n>>>>>> saved runs %s to %s to file!\n", begn, endd))
       # cat("\n********************************************************************************************")
