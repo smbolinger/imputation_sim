@@ -18,7 +18,7 @@ params <- list(nrun=100, hdir="/home/wodehouse/projects/fate_glm/",
                xdeb=FALSE, # for obsessively checking things - not useful for normal debugging & lots of text output
                ipl=FALSE,
                lin=FALSE,
-               seed=61389,
+               seed = NULL,
                resp = NULL,
                j = 50,
                m=20)
@@ -31,7 +31,7 @@ if(length(arg)==0){
   cat("/////////////////////////////////////////////////////////////////////////////////////////////\n\n\n")
 } else if(length(arg) > 0){
   cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n\n")
-  cat("arg =")
+  cat("\t\targ =")
   print(arg)
   cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n\n")
   for(a in arg){
@@ -43,7 +43,7 @@ if(length(arg)==0){
     else if(a=="ipl") params$ipl       <- TRUE
     else if(a=="is_u" | a == "HF_mis") params$resp       <- a
     else if(grepl("j\\d+", a)) params$j <- as.numeric(str_extract(a, "\\d+"))
-    else if(grepl("s\\d+", a)) params$seed <- as.numeric(str_extract(a, "\\d+"))
+    else if(grepl("s\\d+", a)) params$seeds <- c(as.numeric(str_extract(a, "\\d+")))
     else if(grepl("m\\d+", a)) params$m <- as.numeric(str_extract(a, "\\d+"))
     # else if()
   }
@@ -77,7 +77,10 @@ mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cc")# 
 # resp <- "is_u"
 col_list<- c(prVars,params$resp )# columns to select, as strings
 form_list <- formulas[[params$resp]]
-# seeds <- c( 11153, 71358)
+if(is.null(params$seeds)){
+  # params$seeds <- c( 11153, 71358, 102891, 82985, 61389)
+  params$seeds <- c( 102891, 82985, 61389)
+}
 
 #########################################################################################
 
@@ -107,71 +110,72 @@ dimnames(res) <- list(sort(as.character(vars)),
                       names(mods4sim)
                       )
 
-cat(sprintf("\t\t>>> running simulation %s times. seed = %s\n\n", params$nrun, params$seed))
+# cat(sprintf("\t\t>>> running simulation %s times. seed = %s\n\n", params$nrun, params$seed))
 # cat("\n********************************************************************************************")
 
-# for (seed in seeds){
+for (seed in params$seeds){
+  cat(sprintf("\n\n>>>>>> running simulation %s times. seed = %s >>>>>>>>\n\n", params$nrun, seed))
   # cat("seed=",params$seed, " - ")
-for(run in 1:params$nrun){
-  cat(run)
-  datNA <- mkSimDat(nd = dat4sim, seeed = run+params$seed, vars=vars, method = "amp", wt = TRUE, xdebug=params$xdeb, debug = params$deb, convFact = TRUE)
-  datNA <- datNA$amp
-  
-  for(x in seq_along(mets)){ # does matching by index help the trycatch statement?
-    ## *~*~*~*~*
-    # if (xdebug) cat("\n\n>>>> method:", x)
-    skiptoNext <- FALSE
+  for(run in 1:params$nrun){
+    cat(run)
+    datNA <- mkSimDat(nd = dat4sim, seeed = run+params$seed, vars=vars, method = "amp", wt = TRUE, xdebug=params$xdeb, debug = params$deb, convFact = TRUE)
+    datNA <- datNA$amp
     
-    tryCatch(
-      expr = {
-        vals <- mkImpSim(ampDat=datNA,
-                         cols=col_list,
-                         resp=params$resp, 
-                         form_list =form_list,
-                         vars=vars,
-                         mods=mods4sim,
-                         met=mets[x],
-                         debug = params$debug,
-                         m=params$m, 
-                         xdebug=params$xdebug,
-                         impplot=params$ipl
-                         )
-        # imp <- eval(parse(text=impCall))
-        # skiptoNext <- FALSE
-        # if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
-      },
-      error = function(e){
-        cat("\nERROR:", conditionMessage(e), "\n")
-        # next
-        # return(NULL)
-        # skiptoNext <- TRUE
-        skiptoNext <<- TRUE  # superassignment operator- not sure if necessary
-        # imp <- list(imp=NA)
-        # ret[,,y]
-        # continue()
-      }
-    )
-    if(skiptoNext) next
+    for(x in seq_along(mets)){ # does matching by index help the trycatch statement?
+      ## *~*~*~*~*
+      # if (xdebug) cat("\n\n>>>> method:", x)
+      skiptoNext <- FALSE
+      
+      tryCatch(
+        expr = {
+          vals <- mkImpSim(ampDat=datNA,
+                           cols=col_list,
+                           resp=params$resp, 
+                           form_list =form_list,
+                           vars=vars,
+                           mods=mods4sim,
+                           met=mets[x],
+                           debug = params$debug,
+                           m=params$m, 
+                           xdebug=params$xdebug,
+                           impplot=params$ipl
+                           )
+          # imp <- eval(parse(text=impCall))
+          # skiptoNext <- FALSE
+          # if(length(imp$loggedEvents > 0)) print(imp$loggedEvents)
+        },
+        error = function(e){
+          cat("\nERROR:", conditionMessage(e), "\n")
+          # next
+          # return(NULL)
+          # skiptoNext <- TRUE
+          skiptoNext <<- TRUE  # superassignment operator- not sure if necessary
+          # imp <- list(imp=NA)
+          # ret[,,y]
+          # continue()
+        }
+      )
+      if(skiptoNext) next
+      
+      vmatch <- match(rownames(vals), rownames(res)) # col 1 of vals is the row names
+      res[vmatch, mets[x], run,,]  <- vals
+    }
     
-    vmatch <- match(rownames(vals), rownames(res)) # col 1 of vals is the row names
-    res[vmatch, mets[x], run,,]  <- vals
+    # j <- 50
+    # j <-2 
+    if(run %% params$j == 0){
+    # if(run %% 4 == 0){
+      begn <- run-params$j
+      endd <- run-0
+      nowtime <- format(Sys.time(), "%d%b%H%M")
+      fname <- paste(sprintf("out/runs%sto%s_resp%s_seed%s_%s.rds", begn, endd, params$resp, params$seed, nowtime))
+      saveRDS(res[,,begn:endd,,], fname)
+      cat(sprintf("\n>>>>>> saved runs %s to %s to file!\n", begn, endd))
+      # cat("\n********************************************************************************************")
+    }
+    # return(res)
   }
-  
-  # j <- 50
-  # j <-2 
-  if(run %% params$j == 0){
-  # if(run %% 4 == 0){
-    begn <- run-params$j
-    endd <- run-0
-    nowtime <- format(Sys.time(), "%d%b%H%M")
-    fname <- paste(sprintf("out/runs%sto%s_resp%s_seed%s_%s.rds", begn, endd, params$resp, params$seed, nowtime))
-    saveRDS(res[,,begn:endd,,], fname)
-    cat(sprintf("\n>>>>>> saved runs %s to %s to file!\n", begn, endd))
-    # cat("\n********************************************************************************************")
-  }
-  # return(res)
 }
-# }
 
 
 # }
