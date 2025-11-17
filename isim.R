@@ -19,6 +19,8 @@ params <- list(nrun=100, hdir="/home/wodehouse/projects/fate_glm/",
                ipl=FALSE,
                lin=FALSE,
                seed=61389,
+               resp = NULL,
+               j = 50,
                m=20)
 
 arg <- commandArgs(trailingOnly=TRUE)
@@ -38,6 +40,7 @@ if(length(arg)==0){
     else if(a=="xdeb") params$xdeb        <- TRUE
     else if(a=="ipl") params$ipl       <- TRUE
     else if(a=="is_u" | a == "HF_mis") params$resp       <- a
+    else if(grepl("j\\d+", a)) params$j <- as.numeric(str_extract(a, "\\d+"))
     else if(grepl("s\\d+", a)) params$seed <- as.numeric(str_extract(a, "\\d+"))
     else if(grepl("m\\d+", a)) params$m <- as.numeric(str_extract(a, "\\d+"))
     # else if()
@@ -47,7 +50,12 @@ if(length(arg)==0){
 
 debugging <- FALSE # for uickly setting values when working in the file with the functions
 suffix <- sprintf("%sruns", params$nrun)
-cat(">> home directory:", params$hdir, "\t> & number of runs:", params$nrun, "\t> & output suffix:", suffix)
+cat("\n\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+# cat("\n\n>> home directory:", params$hdir, "\t> & number of runs:", params$nrun, "\t> & output suffix:", suffix)
+# cat("\n\n>> home directory:", params$hdir)
+# "\t>> & output suffix:", suffix)
+if(params$j > params$nrun) stop("j must be less than or equal to nrun!")
+if(is.null(params$resp)) stop("no response variable specified!")
 
 modList <- readLines("modList.txt")
 mods4sim <- modList[c(1,8,16) ]
@@ -65,20 +73,22 @@ prVars <- c("species", "cam_fate", "obs_int", "nest_age", "fdate")
 vars <-  c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") # all vars
 mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cc")# don't need full here?
 
-resp <- "is_u"
-col_list<- c(prVars,resp )# columns to select, as strings
-form_list <- formulas[[resp]]
+# resp <- "is_u"
+col_list<- c(prVars,params$resp )# columns to select, as strings
+form_list <- formulas[[params$resp]]
 # seeds <- c( 11153, 71358)
 
 #########################################################################################
 
-cat("\n\n>> number of imputations:", params$m, class(params$m))
-cat("\t>> & methods to test:", mets)
+# cat("\n\n>> number of imputations:", params$m, class(params$m))
+cat("\n\n>> methods to test:", mets)
+cat("\t\t>> & number of imputations:", params$m, class(params$m))
 # cat("\n\n>> bias to be calculated:", bias_names, "\n")
-cat("\n\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M\n"))
+cat("\n\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 
 cat("\n\n********************************************************************************************")
-cat("\n>> response:", resp,"\n\t& columns for imputation:", col_list)
+cat("\n>> response:", params$resp,"\n\t& columns for imputation:", col_list)
+cat("\n\n>> output will be saved every", params$j, "runs to home directory:", params$hdir)
 cat("\n********************************************************************************************\n\n")
 
 res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim)))
@@ -110,7 +120,7 @@ for(run in 1:params$nrun){
       expr = {
         vals <- mkImpSim(ampDat=datNA,
                          cols=col_list,
-                         resp=resp, 
+                         resp=params$resp, 
                          form_list =form_list,
                          vars=vars,
                          mods=mods4sim,
@@ -141,13 +151,14 @@ for(run in 1:params$nrun){
     res[vmatch, mets[x], run,,]  <- vals
   }
   
-  j <- 50
-  if(run %% j == 0){
+  # j <- 50
+  # j <-2 
+  if(run %% params$j == 0){
   # if(run %% 4 == 0){
-    begn <- run-j
+    begn <- run-params$j
     endd <- run-0
     nowtime <- format(Sys.time(), "%d%b%H%M")
-    fname <- paste(sprintf("out/runs%sto%s_resp%s_seed%s_%s.rds", begn, endd, resp, seed, nowtime))
+    fname <- paste(sprintf("out/runs%sto%s_resp%s_seed%s_%s.rds", begn, endd, params$resp, params$seed, nowtime))
     saveRDS(res[,,begn:endd,,], fname)
     cat(sprintf(">>>>>> saved runs %s to %s to file!", begn, endd))
   }
