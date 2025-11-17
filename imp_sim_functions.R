@@ -144,7 +144,8 @@ mkMetList <- function(met, dat, int=NULL, debug=FALSE){
       # met1 <- ifelse(is.numeric())
       met1 <- case_when(c %in% is_num ~ "pmm",
                         c %in% is_bin ~ "logreg",
-                        c %in% is_cat ~ "polyreg")
+                        # c %in% is_cat ~ "polyreg")
+                        c %in% is_cat ~ "pmm") # because I have many cells w/ <10 obs
       # met2 <- paste("~I(", int,")")
     } else {met1 <- met}
     
@@ -180,16 +181,24 @@ if (FALSE){
   # facToNum <- TRUE
   facToNum <-FALSE 
   vars <- var_list
+  seeed <- 614
 }
 
 # mkSimDat <- function(nd,col_sel, method="amp", wt=TRUE, debug=FALSE, convFact=FALSE){
 mkSimDat <- function(seeed, nd, vars, facToNum=FALSE, method="amp", wt=TRUE, debug=FALSE, xdebug=FALSE, convFact=FALSE){
-  # cat("mkSimDat seed=", seeed)
+  # cat("mkSimDat seed=", seeed, class(seeed))
   if(method=="amp"){
     dat4amp <- add_dummy(nd, debug=debug)
     set.seed(seed=seeed)
     suppressWarnings(amp_out1 <- mice::ampute(dat4amp))
     
+    if(FALSE){
+      out <- add_fact(amp_out1$amp,facToNum = T, debug=T)
+      # levels(out$cam_fate)
+      table(out$cam_fate)
+      xtabs(formula = ~ cam_fate + species, data = out)
+      xtabs(formula = ~ cam_fate + species, data = nd)
+    }
     new_patt <- amp_out1$patterns
     new_patt
     # is_miss <- c("")
@@ -207,7 +216,7 @@ mkSimDat <- function(seeed, nd, vars, facToNum=FALSE, method="amp", wt=TRUE, deb
     m <- do.call(rbind,miss_pat) # create the matrix of the missingness patterns 
     p <- do.call(rbind, rep(list(c(rep(1,5))), 3)) # create additional columns for the vars not missing values
     
-    new_prop <- 0.2
+    new_prop <- 0.16
     miss_patt_mat <- cbind(m,p)
     colnames(miss_patt_mat) <- c(is_miss, no_miss)
     patt_freq <- c(0.45,0.45,0.1) # missing: age only, fate only, both
@@ -224,6 +233,12 @@ mkSimDat <- function(seeed, nd, vars, facToNum=FALSE, method="amp", wt=TRUE, deb
     dat4amp <- dat4amp %>% select(all_of(new_order)) # reorder the columns to match the matrix
     
     suppressWarnings(amp_out <- mice::ampute(dat4amp, prop = new_prop, patterns = miss_patt_mat, freq = patt_freq))
+    if(FALSE){
+      out <- add_fact(amp_out$amp,facToNum = T, debug=T)
+      # levels(out$cam_fate)
+      table(out$cam_fate)
+      xtabs(formula = ~ cam_fate + species, data = out)
+    }
     ### *~*~*~*~* #######
     # if(xdebug) cat("\n\nCreate new missing values:\n")
     # if(xdebug) print(mice::md.pattern(amp_out$amp, rotate.names = TRUE))
@@ -243,6 +258,14 @@ mkSimDat <- function(seeed, nd, vars, facToNum=FALSE, method="amp", wt=TRUE, deb
     # what exactly are the weights doing?
     suppressWarnings(amp_out_wt <- mice::ampute(dat4amp, prop = new_prop, patterns = miss_patt_mat, freq = patt_freq,weights = wts))
     
+    if(FALSE){
+      out <- add_fact(amp_out_wt$amp,facToNum = T, debug=T)
+      # levels(out$cam_fate)
+      table(out$cam_fate)
+      table(out$HF_mis)
+      table(out$is_u)
+      xtabs(formula = ~ cam_fate + species, data = out)
+    }
     ### *~*~*~*~* #######
     # if(debug) cat("\n\nCreate more new missing values, with weighted probabilities:\n")
     # if(debug)  print(mice::md.pattern(amp_out_wt$amp, rotate.names = TRUE))
@@ -293,7 +316,11 @@ mkSimDat <- function(seeed, nd, vars, facToNum=FALSE, method="amp", wt=TRUE, deb
 if(debugging){
   # dat=mkSimDat(ndGLM_scl_cc, convFact = TRUE)$amp
   # ampDat=mkSimDat(ndGLM_scl_cc, convFact = TRUE)$amp
-  ampDat = mkSimDat(seeed=13, nd=dat4sim, vars=var_list, convFact=TRUE)$amp
+  s = 614
+  s=618
+  ampDat = mkSimDat(seeed=s, nd=dat4sim, vars=var_list, convFact=TRUE)$amp
+  xtabs(~ cam_fate + species, data=ampDat)
+  # ampDat <- datList$amp
   # ampDat <- datNA
   # aDat = sim_dat$amp
   # aDat = sim_dat$amp[1:20,]
@@ -393,6 +420,7 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       # metLists
       # names(metList)
       ampDat <- ampDat %>% select(all_of(cols)) %>% droplevels() # need to select the cols that are relevant for mod?
+      
       
       # metList <- metList[!is.na(metList), drop=F] 
       # dimnames(metList)

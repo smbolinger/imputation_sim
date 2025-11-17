@@ -73,13 +73,14 @@ levels(dat4sim$is_u)   <- c(0,1)
 prVars <- c("species", "cam_fate", "obs_int", "nest_age", "fdate")
 vars <-  c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") # all vars
 mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cc")# don't need full here?
+# mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cf_cc","cc")# don't need full here?
 
 # resp <- "is_u"
 col_list<- c(prVars,params$resp )# columns to select, as strings
 form_list <- formulas[[params$resp]]
 if(is.null(params$seeds)){
-  # params$seeds <- c( 11153, 71358, 102891, 82985, 61389)
-  params$seeds <- c( 102891, 82985, 61389)
+  params$seeds <- c( 11153, 71358, 102891, 82985, 61389)
+  # params$seeds <- c( 102891, 82985, 61389, )
 }
 
 #########################################################################################
@@ -118,6 +119,7 @@ for (seed in params$seeds){
   # cat("seed=",params$seed, " - ")
   for(run in 1:params$nrun){
     cat(run)
+    # repeat this until you get a dataset w/o missing levels??
     datNA <- mkSimDat(nd = dat4sim, seeed = run+seed, vars=vars, method = "amp", wt = TRUE, xdebug=params$xdeb, debug = params$deb, convFact = TRUE)
     datNA <- datNA$amp
     
@@ -126,6 +128,8 @@ for (seed in params$seeds){
       # if (xdebug) cat("\n\n>>>> method:", x)
       skiptoNext <- FALSE
       
+      # the error seems to come from levels with zero observations
+      # so maybe ampute() is removing all the camera fates of category X (F in this case)
       tryCatch(
         expr = {
           vals <- mkImpSim(ampDat=datNA,
@@ -150,6 +154,7 @@ for (seed in params$seeds){
           # return(NULL)
           # skiptoNext <- TRUE
           skiptoNext <<- TRUE  # superassignment operator- not sure if necessary
+          cat(levels)
           # imp <- list(imp=NA)
           # ret[,,y]
           # continue()
