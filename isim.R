@@ -72,8 +72,8 @@ levels(dat4sim$is_u)   <- c(0,1)
  
 prVars <- c("species", "cam_fate", "obs_int", "nest_age", "fdate")
 vars <-  c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") # all vars
-mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cc")# don't need full here?
-# mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cf_cc","cc")# don't need full here?
+# mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cc")# don't need full here?
+mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cf_cc","cc")# don't need full here?
 
 # resp <- "is_u"
 col_list<- c(prVars,params$resp )# columns to select, as strings
@@ -87,7 +87,7 @@ if(is.null(params$seeds)){
 
 # cat("\n\n>> number of imputations:", params$m, class(params$m))
 cat("\n********************************************************************************************")
-cat("\n\n>> methods:", mets)
+cat("\n>> methods:", mets)
 # cat("\t\t>> & number of imputations:", params$m, class(params$m))
 cat("\t>> & no. imputations:", params$m)
 # cat("\n\n>> bias to be calculated:", bias_names, "\n")
@@ -96,9 +96,9 @@ cat("\t>> & no. imputations:", params$m)
 cat("\n\n********************************************************************************************")
 cat("\n>> response:", params$resp,"\n\t& columns for imputation:", col_list)
 cat("\n\n********************************************************************************************")
-cat("\n\n>> output will be saved every", params$j, "runs to home directory:", params$hdir)
+cat("\n>> output will be saved every", params$j, "runs to home directory:", params$hdir)
 cat("\n\n********************************************************************************************")
-cat("\n\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
+cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 
 res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim)))
 # dimnames(res) <- list(c("pmm", "rf"),
@@ -115,7 +115,7 @@ dimnames(res) <- list(sort(as.character(vars)),
 # cat("\n********************************************************************************************")
 
 for (seed in params$seeds){
-  cat(sprintf("\n\n>>>>>> running simulation %s times. seed = %s >>>>>>>>\n\n", params$nrun, seed))
+  cat(sprintf("\t>>>>>> running simulation %s times. seed = %s >>>>>>>>\n\n", params$nrun, seed))
   # cat("seed=",params$seed, " - ")
   for(run in 1:params$nrun){
     cat(run)
@@ -154,7 +154,7 @@ for (seed in params$seeds){
           # return(NULL)
           # skiptoNext <- TRUE
           skiptoNext <<- TRUE  # superassignment operator- not sure if necessary
-          cat(levels)
+          # cat(levels)
           # imp <- list(imp=NA)
           # ret[,,y]
           # continue()

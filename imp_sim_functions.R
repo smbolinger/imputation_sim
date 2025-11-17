@@ -139,7 +139,7 @@ mkMetList <- function(met, dat, int=NULL, debug=FALSE){
     }else if(met %in% c("default.int", "pmm.int")){
       met1 <- str_extract(met, pattern = "\\w+(?=.)") # everything up until the period
       # }else if(met == "passive.int"){
-    }else if(met == "passive" | met=="stratify"){
+    }else if(met == "passive" | met=="stratify" | met=="cf_cc"){
       # met1 <- ""
       # met1 <- ifelse(is.numeric())
       met1 <- case_when(c %in% is_num ~ "pmm",
@@ -153,6 +153,7 @@ mkMetList <- function(met, dat, int=NULL, debug=FALSE){
     # make NAs so that those columns can be dropped later
     metList[c] <- case_when(
       # interTrue & met=="passive" ~ paste("~I(",int,")"),
+      met=="cf_cc" & c=="cam_fate" ~ "",
       met =="default" ~ NA,
       met == "passive" ~ NA,
       met=="stratify" & c=="species" ~ NA, # this should still exist, but take species out of formula?
@@ -410,7 +411,12 @@ mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=
       # }
       ##################
     }
+  # } else if (met=="cf_cc"){
+  #   
+  #   ampDat <- ampDat %>% select(all_of(cols)) %>% filter(!is.na(cam_fate))
+    
   } else {
+    if (met=="cf_cc") ampDat <- ampDat %>% select(all_of(cols)) %>% filter(!is.na(cam_fate))
     # ampDat <- aDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
     for(y in seq_along(mods)){
       # needs to be a named list; but if you keep the names, it doesn't drop NA...
