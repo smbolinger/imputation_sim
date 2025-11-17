@@ -81,8 +81,9 @@ form_list <- formulas[[params$resp]]
 #########################################################################################
 
 # cat("\n\n>> number of imputations:", params$m, class(params$m))
-cat("\n\n>> methods to test:", mets)
-cat("\t\t>> & number of imputations:", params$m, class(params$m))
+cat("\n\n>> methods:", mets)
+# cat("\t\t>> & number of imputations:", params$m, class(params$m))
+cat("\t\t>> & no. imputations:", params$m)
 # cat("\n\n>> bias to be calculated:", bias_names, "\n")
 cat("\n\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 
