@@ -30,8 +30,10 @@ if(length(arg)==0){
   cat("\n** NOTE ** no arguments provided - using default of linux = FALSE\n\n")
   cat("/////////////////////////////////////////////////////////////////////////////////////////////\n\n\n")
 } else if(length(arg) > 0){
+  cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n\n")
   cat("arg =")
   print(arg)
+  cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n\n")
   for(a in arg){
     # if(is.numeric(a)) params$nrun <- a
     if(grepl("^\\d+$", a)) params$nrun  <- a
@@ -50,7 +52,6 @@ if(length(arg)==0){
 
 debugging <- FALSE # for uickly setting values when working in the file with the functions
 suffix <- sprintf("%sruns", params$nrun)
-cat("\n\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
 # cat("\n\n>> home directory:", params$hdir, "\t> & number of runs:", params$nrun, "\t> & output suffix:", suffix)
 # cat("\n\n>> home directory:", params$hdir)
 # "\t>> & output suffix:", suffix)
@@ -81,16 +82,19 @@ form_list <- formulas[[params$resp]]
 #########################################################################################
 
 # cat("\n\n>> number of imputations:", params$m, class(params$m))
+cat("\n********************************************************************************************")
 cat("\n\n>> methods:", mets)
 # cat("\t\t>> & number of imputations:", params$m, class(params$m))
-cat("\t\t>> & no. imputations:", params$m)
+cat("\t>> & no. imputations:", params$m)
 # cat("\n\n>> bias to be calculated:", bias_names, "\n")
-cat("\n\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
+# cat("\n\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 
 cat("\n\n********************************************************************************************")
 cat("\n>> response:", params$resp,"\n\t& columns for imputation:", col_list)
+cat("\n\n********************************************************************************************")
 cat("\n\n>> output will be saved every", params$j, "runs to home directory:", params$hdir)
-cat("\n********************************************************************************************\n\n")
+cat("\n\n********************************************************************************************")
+cat("\n\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 
 res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim)))
 # dimnames(res) <- list(c("pmm", "rf"),
@@ -103,7 +107,8 @@ dimnames(res) <- list(sort(as.character(vars)),
                       names(mods4sim)
                       )
 
-cat(sprintf(">>> running simulation %s times. seed = %s\n\n", params$nrun, params$seed))
+cat(sprintf("\t\t>>> running simulation %s times. seed = %s\n\n", params$nrun, params$seed))
+# cat("\n********************************************************************************************")
 
 # for (seed in seeds){
   # cat("seed=",params$seed, " - ")
@@ -161,7 +166,8 @@ for(run in 1:params$nrun){
     nowtime <- format(Sys.time(), "%d%b%H%M")
     fname <- paste(sprintf("out/runs%sto%s_resp%s_seed%s_%s.rds", begn, endd, params$resp, params$seed, nowtime))
     saveRDS(res[,,begn:endd,,], fname)
-    cat(sprintf(">>>>>> saved runs %s to %s to file!", begn, endd))
+    cat(sprintf("\n>>>>>> saved runs %s to %s to file!\n", begn, endd))
+    # cat("\n********************************************************************************************")
   }
   # return(res)
 }
