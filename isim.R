@@ -32,10 +32,9 @@ params <- list(nrun=100,
 if(win) cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 arg <- commandArgs(trailingOnly=TRUE)
 if(length(arg)==0){
-  # stop("at minimum, needs argument for 'lin' (T or F)")
-  cat("\n\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
-  cat("** NOTE ** no arguments provided - using default of windows = FALSE\n")
-  cat("/////////////////////////////////////////////////////////////////////////////////////////////\n\n")
+	cat("\n\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+	cat("** NOTE ** no arguments provided - using default of windows = FALSE\n")
+	cat("/////////////////////////////////////////////////////////////////////////////////////////////\n\n")
 } else if(length(arg) > 0){
   #cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
   cat("\n/////////////////")
@@ -44,18 +43,15 @@ if(length(arg)==0){
   cat("  /////////////////\n")
   #cat("/////////////////////////////////////////////////////////////////////////////////////////////\n")
   for(a in arg){
-    # if(is.numeric(a)) params$nrun <- a
-    #if(grepl("^\\d+$", a)) params$nrun  <- a
-    if(grepl("r\\d+$", a)) params$nrun  <- as.numeric(str_extract(a, "\\d+"))
-    else if(a=="win") params$win        <- TRUE
-    else if(a=="deb") params$deb        <- TRUE
-    else if(a=="xdeb") params$xdeb        <- TRUE
-    else if(a=="ipl") params$ipl       <- TRUE
-    else if(a=="is_u" | a == "HF_mis") params$resp       <- a
-    else if(grepl("j\\d+", a)) params$j <- as.numeric(str_extract(a, "\\d+"))
-    else if(grepl("s\\d+", a)) params$seeds <- c(as.numeric(str_extract(a, "\\d+")))
-    else if(grepl("m\\d+", a)) params$m <- as.numeric(str_extract(a, "\\d+"))
-    # else if()
+	  if(grepl("r\\d+$", a)) params$nrun  <- as.numeric(str_extract(a, "\\d+"))
+	  else if(a=="lin") params$win        <- TRUE
+	  else if(a=="deb") params$deb        <- TRUE
+	  else if(a=="xdeb") params$xdeb        <- TRUE
+	  else if(a=="ipl") params$ipl       <- TRUE
+	  else if(a=="is_u" | a == "HF_mis") params$resp       <- a
+	  else if(grepl("j\\d+", a)) params$j <- as.numeric(str_extract(a, "\\d+"))
+	  else if(grepl("s\\d+", a)) params$seeds <- c(as.numeric(str_extract(a, "\\d+")))
+	  else if(grepl("m\\d+", a)) params$m <- as.numeric(str_extract(a, "\\d+"))
   }
 }
 #########################################################################################
@@ -83,7 +79,8 @@ dat4fates <- dat4sim %>%
 # dat3fate
  
 prVars <- c("species", "cam_fate", "obs_int", "nest_age", "fdate")
-cat("sort vars or not???")                                                                        1 #vars <- sort( c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "
+
+cat("sort vars or not???")
 #vars <- sort( c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") )# all vars
 vars <-  c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") # all vars
 mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cf_cc","cc")# don't need full here?
