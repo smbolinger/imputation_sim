@@ -1,11 +1,13 @@
 
   # col_sel <- c(prVars,r) # columns to select, as strings
 # source("fateGLM_impsim.R")
+
 library(brglm2) # penalized logistic regression
 library(CALIBERrfimpute) # could access using ::
 library(gt)
 library(gtsummary)
-library(tidyverse)
+suppressMessages(library(mice))
+suppressMessages(library(tidyverse))
 source("mice_functions.R")
 source("imp_sim_functions.R")
 source("missing_data.R")
@@ -13,31 +15,37 @@ source("other_imp.R")
 
 #########################################################################################
 
-params <- list(nrun=100, hdir="/home/wodehouse/projects/fate_glm/",
+params <- list(nrun=100,
+	       hdir="/home/wodehouse/Projects/fate_glm/",
+	       outdir = paste0(format(Sys.time(), "%d%b"),"/"),
                deb=FALSE,
                xdeb=FALSE, # for obsessively checking things - not useful for normal debugging & lots of text output
                ipl=FALSE,
-               lin=FALSE,
-               seed = NULL,
+               win=FALSE,
+               seeds = NULL,
                resp = NULL,
                j = 50,
                m=20)
 
+if(win) cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 arg <- commandArgs(trailingOnly=TRUE)
 if(length(arg)==0){
   # stop("at minimum, needs argument for 'lin' (T or F)")
-  cat("\n\n/////////////////////////////////////////////////////////////////////////////////////////////////////\n")
-  cat("\n** NOTE ** no arguments provided - using default of linux = FALSE\n\n")
-  cat("/////////////////////////////////////////////////////////////////////////////////////////////////////////\n\n\n")
+  cat("\n\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+  cat("** NOTE ** no arguments provided - using default of windows = FALSE\n")
+  cat("/////////////////////////////////////////////////////////////////////////////////////////////\n\n")
 } else if(length(arg) > 0){
-  cat("\n///////////////////////////////////////////////////////////////////////////////////////////////////////\n\n")
-  cat("\t\targ =")
-  print(arg)
-  cat("\n///////////////////////////////////////////////////////////////////////////////////////////////////////\n\n")
+  #cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+  cat("\n/////////////////")
+  cat("  arg =  ", paste(unlist(arg), collapse=" ; "))
+  #print(arg)
+  cat("  /////////////////\n")
+  #cat("/////////////////////////////////////////////////////////////////////////////////////////////\n")
   for(a in arg){
     # if(is.numeric(a)) params$nrun <- a
-    if(grepl("^\\d+$", a)) params$nrun  <- a
-    else if(a=="lin") params$lin        <- TRUE
+    #if(grepl("^\\d+$", a)) params$nrun  <- a
+    if(grepl("r\\d+$", a)) params$nrun  <- as.numeric(str_extract(a, "\\d+"))
+    else if(a=="win") params$win        <- TRUE
     else if(a=="deb") params$deb        <- TRUE
     else if(a=="xdeb") params$xdeb        <- TRUE
     else if(a=="ipl") params$ipl       <- TRUE
@@ -84,26 +92,32 @@ mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cf_cc"
 col_list<- c(prVars,params$resp )# columns to select, as strings
 form_list <- formulas[[params$resp]]
 if(is.null(params$seeds)){
-  params$seeds <- c( 11153, 71358, 102891, 82985, 61389)
-  # params$seeds <- c( 102891, 82985, 61389, )
+  #params$seeds <- c( 11153, 71358, 102891, 82985, 61389)
+	params$seeds <- c(71358, 102891, 82985, 61389, 11153)
+	cat("\n****************************************************************************")
+	cat("\n>>> using default seed list:", params$seeds, "\t")
 }
 
 #########################################################################################
 
 # cat("\n\n>> number of imputations:", params$m, class(params$m))
-cat("\n\n*************************************************************************************************")
+#cat("\n****************************************************************************")
+cat("\n")
 cat("\n>> methods:", mets)
 # cat("\t\t>> & number of imputations:", params$m, class(params$m))
-cat("\t>> & no. imputations:", params$m)
+#cat("  >> & no. imp.:", params$m)
 # cat("\n\n>> bias to be calculated:", bias_names, "\n")
 # cat("\n\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 
-cat("\n\n*************************************************************************************************")
-cat("\n>> response:", params$resp,"\n\t& columns for imputation:", col_list)
-cat("\n\n*************************************************************************************************")
-cat("\n>> output will be saved every", params$j, "runs to home directory:", params$hdir)
-cat("\n\n*************************************************************************************************")
-cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
+#cat("\n****************************************************************************")
+cat("\n")
+cat("\n>> total reps: 5 x ", params$nrun) 
+cat("\t>> response:", params$resp,"\n\t& cols for imputation:", col_list)
+cat("\n\n****************************************************************************")
+cat("\n>> output will be saved every", params$j, "runs to dir:", paste0(params$hdir,"out/",params$outdir))
+#cat("\n****************************************************************************")
+cat("\n")
+#cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 
 # res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim)))
 # # dimnames(res) <- list(c("pmm", "rf"),
@@ -131,7 +145,8 @@ for (seed in params$seeds){
                         c("estimate", "2.5 %","97.5 %"),
                         names(mods4sim)
                         )
-  cat(sprintf("\t>>>>>> running simulation %s times. seed = %s >>>>>>>>\n\n", params$nrun, seed))
+  cat(sprintf("\t>>>>>> running simulation %s times. seed = %s \n\n", params$nrun, seed))
+  cat("  >> & no. imp.:", params$m)
   # cat("seed=",params$seed, " - ")
   for(run in 1:params$nrun){
     cat(run)
@@ -192,10 +207,16 @@ for (seed in params$seeds){
     # if(run %% 4 == 0){
       begn <- run-params$j
       endd <- run-0
-      nowtime <- format(Sys.time(), "%d%b%H%M")
-      fname <- paste(sprintf("out/runs%sto%s_resp%s_seed%s_%s.rds", begn, endd, params$resp, seed, nowtime))
+      #nowtime <- format(Sys.time(), "%d%b%H%M")
+      now_dir <- paste0(params$hdir, params$outdir)
+      if(!dir.exists(now_dir)) dir.create(now_dir)
+      cat("\n>>> creating directory:", now_dir, "exists?", exists(now_dir))
+    
+      nowtime <- format(Sys.time(), "%H%M")
+      #fname <- paste(sprintf("out/runs%sto%s_resp%s_seed%s_%s.rds", begn, endd, params$resp, seed, nowtime))
+      fname <- paste0(now_dir,sprintf("runs%sto%s_%s_seed%s_%s.rds", begn, endd, params$resp, seed, nowtime))
       saveRDS(res[,,begn:endd,,], fname)
-      cat(sprintf("\n>>>>>> saved runs %s to %s to file!\n", begn, endd))
+      cat(sprintf("\n>>>>>> saved runs %s to %s to file: %s\n\n", begn, endd, fname))
       # cat("\n********************************************************************************************")
     }
     # return(res)
