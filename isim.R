@@ -32,7 +32,7 @@ params <- list(nrun=100,
 arg <- commandArgs(trailingOnly=TRUE)
 if(length(arg)==0){
 	cat("\n\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
-	cat("** NOTE ** no arguments provided - using default of linux = FALSE\n")
+	cat("** NOTE ** no arguments provided - using default of windows = FALSE\n")
 	cat("/////////////////////////////////////////////////////////////////////////////////////////////\n\n")
 } else if(length(arg) > 0){
   #cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
@@ -43,7 +43,7 @@ if(length(arg)==0){
   #cat("/////////////////////////////////////////////////////////////////////////////////////////////\n")
   for(a in arg){
 	  if(grepl("r\\d+$", a)) params$nrun  <- as.numeric(str_extract(a, "\\d+"))
-	  else if(a=="lin") params$lin        <- TRUE
+	  else if(a=="lin") params$win        <- TRUE
 	  else if(a=="deb") params$deb        <- TRUE
 	  else if(a=="xdeb") params$xdeb        <- TRUE
 	  else if(a=="ipl") params$ipl       <- TRUE
