@@ -1,4 +1,5 @@
 
+
   # col_sel <- c(prVars,r) # columns to select, as strings
 # source("fateGLM_impsim.R")
 
@@ -17,7 +18,8 @@ source("other_imp.R")
 
 params <- list(nrun=100,
 	       hdir="/home/wodehouse/Projects/fate_glm/",
-	       outdir = paste0(format(Sys.time(), "%d%b"),"/"),
+	       #outdir = paste0(format(Sys.time(), "%d%b"),"/"),
+	       outdir = format(Sys.time(), "%d%b"),
                deb=FALSE,
                xdeb=FALSE, # for obsessively checking things - not useful for normal debugging & lots of text output
                ipl=FALSE,
@@ -60,9 +62,6 @@ if(length(arg)==0){
 
 debugging <- FALSE # for uickly setting values when working in the file with the functions
 suffix <- sprintf("%sruns", params$nrun)
-# cat("\n\n>> home directory:", params$hdir, "\t> & number of runs:", params$nrun, "\t> & output suffix:", suffix)
-# cat("\n\n>> home directory:", params$hdir)
-# "\t>> & output suffix:", suffix)
 if(params$j > params$nrun) stop("j must be less than or equal to nrun!")
 if(is.null(params$resp)) stop("no response variable specified!")
 
@@ -84,18 +83,30 @@ dat4fates <- dat4sim %>%
 # dat3fate
  
 prVars <- c("species", "cam_fate", "obs_int", "nest_age", "fdate")
-vars <- sort( c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") )# all vars
-# mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cc")# don't need full here?
+cat("sort vars or not???")                                                                        1 #vars <- sort( c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "
+#vars <- sort( c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") )# all vars
+vars <-  c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") # all vars
 mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cf_cc","cc")# don't need full here?
 
 # resp <- "is_u"
 col_list<- c(prVars,params$resp )# columns to select, as strings
 form_list <- formulas[[params$resp]]
+seed_out <- FALSE
+now_dir <- paste0(params$hdir, params$outdir, sep="out/")
+if(!dir.exists(now_dir)) dir.create(now_dir)
 if(is.null(params$seeds)){
-  #params$seeds <- c( 11153, 71358, 102891, 82985, 61389)
+	seed_out <- TRUE
 	params$seeds <- c(71358, 102891, 82985, 61389, 11153)
+	last_seed <- as.numeric(grep(readLines("seed.flag"), params$seeds))
+	cat("last seed:", last_seed)
+	#new_order <- params$seeds + last_seed
+	new_order <- seq(1,length(params$seeds)) + last_seed
+	cat("new order:", new_order)
+	new_order[new_order > 5] = new_order[new_order > 5] - 5
+	cat("new order:", new_order)
+	params$seeds <- params$seeds[new_order]
 	cat("\n****************************************************************************")
-	cat("\n>>> using default seed list:", params$seeds, "\t")
+	cat("\n>>> using default seed list, in new order:", params$seeds, "\t")
 }
 
 #########################################################################################
@@ -111,45 +122,35 @@ cat("\n>> methods:", mets)
 
 #cat("\n****************************************************************************")
 cat("\n")
-cat("\n>> total reps: 5 x ", params$nrun) 
+cat(sprintf("\n>> total reps: %s x %s", length(params$seeds), params$nrun)) 
 cat("\t>> response:", params$resp,"\n\t& cols for imputation:", col_list)
 cat("\n\n****************************************************************************")
-cat("\n>> output will be saved every", params$j, "runs to dir:", paste0(params$hdir,"out/",params$outdir))
+#cat("\n>> output will be saved every", params$j, "runs to dir:", paste0(params$hdir,"out/",params$outdir))
+cat("\n>> output will be saved every", params$j, "runs to dir:", now_dir)
 #cat("\n****************************************************************************")
 cat("\n")
 #cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
-
-# res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim)))
-# # dimnames(res) <- list(c("pmm", "rf"),
-# dimnames(res) <- list(sort(as.character(vars)),
-#                       # c("pmm", "rf", "cart"),
-#                       as.character(mets),
-#                       as.character(1:params$nrun),
-#                       # c("estimate", "2.5 %","97.5 %","fmi"),
-#                       c("estimate", "2.5 %","97.5 %"),
-#                       names(mods4sim)
-#                       )
 
 # cat(sprintf("\t\t>>> running simulation %s times. seed = %s\n\n", params$nrun, params$seed))
 # cat("\n********************************************************************************************")
 
 for (seed in params$seeds){
-  res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim)))
-  # dimnames(res) <- list(c("pmm", "rf"),
-  # dimnames(res) <- list(sort(as.character(vars)),
-  dimnames(res) <- list(vars,
-                        # c("pmm", "rf", "cart"),
-                        as.character(mets),
-                        as.character(1:params$nrun),
-                        # c("estimate", "2.5 %","97.5 %","fmi"),
-                        c("estimate", "2.5 %","97.5 %"),
-                        names(mods4sim)
-                        )
-  cat(sprintf("\t>>>>>> running simulation %s times. seed = %s \n\n", params$nrun, seed))
-  cat("  >> & no. imp.:", params$m)
-  # cat("seed=",params$seed, " - ")
-  for(run in 1:params$nrun){
-    cat(run)
+	res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim)))
+	# dimnames(res) <- list(c("pmm", "rf"),
+	dimnames(res) <- list(sort(as.character(vars)),
+			      # c("pmm", "rf", "cart"),
+			      as.character(mets),
+			      as.character(1:params$nrun),
+			      # c("estimate", "2.5 %","97.5 %","fmi"),
+			      c("estimate", "2.5 %","97.5 %"),
+			      names(mods4sim)
+			      )
+
+	  cat(sprintf(">>> running simulation %s times \t>>> seed = %s ", params$nrun, seed))
+	  cat("\t>> & no. imp.:", params$m, "\n\n")
+	  # cat("seed=",params$seed, " - ")
+	  for(run in 1:params$nrun){
+	    cat(run)
     # repeat this until you get a dataset w/o missing levels??
     datNA <- mkSimDat(nd = dat4sim, seeed = run+seed, vars=vars, method = "amp", wt = TRUE, xdebug=params$xdeb, debug = params$deb, convFact = TRUE)
     datNA <- datNA$amp
@@ -204,27 +205,27 @@ for (seed in params$seeds){
     # j <- 50
     # j <-2 
     if(run %% params$j == 0){
-    # if(run %% 4 == 0){
-      begn <- run-params$j
-      endd <- run-0
-      #nowtime <- format(Sys.time(), "%d%b%H%M")
-      now_dir <- paste0(params$hdir, params$outdir)
-      if(!dir.exists(now_dir)) dir.create(now_dir)
-      cat("\n>>> creating directory:", now_dir, "exists?", exists(now_dir))
-    
-      nowtime <- format(Sys.time(), "%H%M")
-      #fname <- paste(sprintf("out/runs%sto%s_resp%s_seed%s_%s.rds", begn, endd, params$resp, seed, nowtime))
-      fname <- paste0(now_dir,sprintf("runs%sto%s_%s_seed%s_%s.rds", begn, endd, params$resp, seed, nowtime))
-      saveRDS(res[,,begn:endd,,], fname)
-      cat(sprintf("\n>>>>>> saved runs %s to %s to file: %s\n\n", begn, endd, fname))
-      # cat("\n********************************************************************************************")
+	    # if(run %% 4 == 0){
+	    begn <- run-params$j
+	    endd <- run-0
+	    #nowtime <- format(Sys.time(), "%d%b%H%M")
+	    #cat("\n>>> creating directory:", now_dir, "exists?", exists(now_dir))
+	    nowtime <- format(Sys.time(), "%H_%M")
+	    #fname <- paste(sprintf("out/runs%sto%s_resp%s_seed%s_%s.rds", begn, endd, params$resp, seed, nowtime))
+	    fname <- paste0(now_dir,sprintf("runs%sto%s_%s_seed%s_%s.rds", begn, endd, params$resp, seed, nowtime))
+	    saveRDS(res[,,begn:endd,,], fname)
+	    cat(sprintf("\n>>>>>> %s - saved runs %s to %s to file: %s\n\n",nowtime, begn, endd, fname))
     }
     # return(res)
   }
+	if (seed_out){
+		writeLines(as.character(seed), "seed.flag")
+		cat("\n>> wrote seed value to file\n")
+	}
 }
 
 
-# }
+
 # imp_sim <- runSim(fullDat=dat4sim,col_sel = col_list,mets = met_list,forms=form_list, resp = r, vars = var_list, mods = mods4sim,par=params) # don't want to set seed
 # if(debug) Rprof()
 # imp_sim_m <- runSim(fullDat=dat4sim,col_sel = col_list,mLists = metLists,forms=form_list, resp = r, vars = var_list, mods = mods4sim,par=params) # don't want to set seed
