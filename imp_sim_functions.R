@@ -835,6 +835,8 @@ if(FALSE){
   # mod=modList[1]
   
   
+  #OLD met list:
+  mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cc")# don't need full here?
   # if working from fateGLM_impsim.R:
   resp = r
   fullDat <- dat4sim 
@@ -925,11 +927,14 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       # # which(dim(impDat))
       # marg <- c(which(dimnames(impDat) %in% vars), which(dimnames(impDat) %in% biasVals))
       # impDat[v, , , ,] 
-      avg <- apply(impDat[v, , , ,],MARGIN=c(1,3),FUN = mean, na.rm=TRUE)
+      avg <- apply(impDat[v, , , ,z],MARGIN=c(1,3),FUN = mean, na.rm=TRUE)
       # avg
       sdev <- apply(impDat[v, , , ,],MARGIN=c(1,3),FUN = sd, na.rm=TRUE)
       if(FALSE){
         impDat["nest_age", "default", , "estimate","m1"] 
+        impDat["nest_age", , , , ]
+        mean(impDat["nest_age", "default", , "estimate","m1"] )
+        
         impDat["nest_age",, , "estimate","m1"] 
         impDat["nest_age", "default",1 , "estimate","m1"] <-  -2
         impDat["nest_age", "pmm",2 , "estimate","m1"] <-  -2
@@ -940,6 +945,9 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
         sdev
         bias[v,,"value",]
         true
+        impDat[v, , , , z]
+        impDat[v, "pmm", , , z]
+        apply(impDat[v, "pmm", , , z], MARGIN=c(3,4), FUN=mean, na.rm=TRUE)
       }
       # impDat[v,1,,1]
       # impDat[]
@@ -960,7 +968,7 @@ parAvg <- function(fullDat, impDat, hdir, resp, vars, mods, regMet="brglm_fit", 
       # dimnames(avg)
       bias[v, , "value", ] <- avg[,"estimate"]
       bias[v, , "bias", ] <- avg[,"estimate"] - true
-      # bias
+      bias
       # bias[v, , "bias"] <- rowMeans(impDat[v,,,"estimate"]) - true #should be equivalent to the line above
       bias[v, , "pctBias",] <- 100 * abs((avg[,"estimate"] - true) / true )
       # bias[vars[v], , "covRate"] <- avg[,"2.5 %"] < true & true > avg[,"97.5 %"]

@@ -26,14 +26,14 @@ params <- list(nrun=100, hdir="/home/wodehouse/projects/fate_glm/",
 arg <- commandArgs(trailingOnly=TRUE)
 if(length(arg)==0){
   # stop("at minimum, needs argument for 'lin' (T or F)")
-  cat("\n\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+  cat("\n\n/////////////////////////////////////////////////////////////////////////////////////////////////////\n")
   cat("\n** NOTE ** no arguments provided - using default of linux = FALSE\n\n")
-  cat("/////////////////////////////////////////////////////////////////////////////////////////////\n\n\n")
+  cat("/////////////////////////////////////////////////////////////////////////////////////////////////////////\n\n\n")
 } else if(length(arg) > 0){
-  cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n\n")
+  cat("\n///////////////////////////////////////////////////////////////////////////////////////////////////////\n\n")
   cat("\t\targ =")
   print(arg)
-  cat("\n/////////////////////////////////////////////////////////////////////////////////////////////\n\n")
+  cat("\n///////////////////////////////////////////////////////////////////////////////////////////////////////\n\n")
   for(a in arg){
     # if(is.numeric(a)) params$nrun <- a
     if(grepl("^\\d+$", a)) params$nrun  <- a
@@ -69,9 +69,14 @@ dat4sim$cam_fate <- relevel(dat4sim$cam_fate, ref="H") # make 'H' the reference 
 dat4sim$species <- relevel(dat4sim$species, ref="LETE")
 levels(dat4sim$HF_mis) <- c(0,1)
 levels(dat4sim$is_u)   <- c(0,1)
+
+dat4fates <- dat4sim %>% 
+  mutate(cam_fate = if_else(cam_fate=="S"|cam_fate=="Hu", "F", cam_fate)) %>% 
+  mutate(cam_fate= relevel(as.factor(cam_fate), ref="H"))
+# dat3fate
  
 prVars <- c("species", "cam_fate", "obs_int", "nest_age", "fdate")
-vars <-  c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") # all vars
+vars <- sort( c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") )# all vars
 # mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cc")# don't need full here?
 mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cf_cc","cc")# don't need full here?
 
@@ -86,35 +91,46 @@ if(is.null(params$seeds)){
 #########################################################################################
 
 # cat("\n\n>> number of imputations:", params$m, class(params$m))
-cat("\n********************************************************************************************")
+cat("\n\n*************************************************************************************************")
 cat("\n>> methods:", mets)
 # cat("\t\t>> & number of imputations:", params$m, class(params$m))
 cat("\t>> & no. imputations:", params$m)
 # cat("\n\n>> bias to be calculated:", bias_names, "\n")
 # cat("\n\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 
-cat("\n\n********************************************************************************************")
+cat("\n\n*************************************************************************************************")
 cat("\n>> response:", params$resp,"\n\t& columns for imputation:", col_list)
-cat("\n\n********************************************************************************************")
+cat("\n\n*************************************************************************************************")
 cat("\n>> output will be saved every", params$j, "runs to home directory:", params$hdir)
-cat("\n\n********************************************************************************************")
+cat("\n\n*************************************************************************************************")
 cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 
-res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim)))
-# dimnames(res) <- list(c("pmm", "rf"),
-dimnames(res) <- list(sort(as.character(vars)),
-                      # c("pmm", "rf", "cart"),
-                      as.character(mets),
-                      as.character(1:params$nrun),
-                      # c("estimate", "2.5 %","97.5 %","fmi"),
-                      c("estimate", "2.5 %","97.5 %"),
-                      names(mods4sim)
-                      )
+# res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim)))
+# # dimnames(res) <- list(c("pmm", "rf"),
+# dimnames(res) <- list(sort(as.character(vars)),
+#                       # c("pmm", "rf", "cart"),
+#                       as.character(mets),
+#                       as.character(1:params$nrun),
+#                       # c("estimate", "2.5 %","97.5 %","fmi"),
+#                       c("estimate", "2.5 %","97.5 %"),
+#                       names(mods4sim)
+#                       )
 
 # cat(sprintf("\t\t>>> running simulation %s times. seed = %s\n\n", params$nrun, params$seed))
 # cat("\n********************************************************************************************")
 
 for (seed in params$seeds){
+  res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim)))
+  # dimnames(res) <- list(c("pmm", "rf"),
+  # dimnames(res) <- list(sort(as.character(vars)),
+  dimnames(res) <- list(vars,
+                        # c("pmm", "rf", "cart"),
+                        as.character(mets),
+                        as.character(1:params$nrun),
+                        # c("estimate", "2.5 %","97.5 %","fmi"),
+                        c("estimate", "2.5 %","97.5 %"),
+                        names(mods4sim)
+                        )
   cat(sprintf("\t>>>>>> running simulation %s times. seed = %s >>>>>>>>\n\n", params$nrun, seed))
   # cat("seed=",params$seed, " - ")
   for(run in 1:params$nrun){
@@ -123,6 +139,7 @@ for (seed in params$seeds){
     datNA <- mkSimDat(nd = dat4sim, seeed = run+seed, vars=vars, method = "amp", wt = TRUE, xdebug=params$xdeb, debug = params$deb, convFact = TRUE)
     datNA <- datNA$amp
     
+    # prv<- profvis::profvis(
     for(x in seq_along(mets)){ # does matching by index help the trycatch statement?
       ## *~*~*~*~*
       # if (xdebug) cat("\n\n>>>> method:", x)
@@ -160,11 +177,14 @@ for (seed in params$seeds){
           # continue()
         }
       )
-      if(skiptoNext) next
-      
-      vmatch <- match(rownames(vals), rownames(res)) # col 1 of vals is the row names
-      res[vmatch, mets[x], run,,]  <- vals
-    }
+    if(skiptoNext) next
+    
+    vmatch <- match(rownames(vals), rownames(res)) # col 1 of vals is the row names
+    res[vmatch, mets[x], run,,]  <- vals
+  }
+    # )
+    # # htmlwidgets::saveWidget(prv, sprintf("prof/profile2_%s_%s.html", params$resp, x))
+    # htmlwidgets::saveWidget(prv, sprintf("prof/profile2_%s.html", params$resp))
     
     # j <- 50
     # j <-2 
@@ -198,3 +218,74 @@ for (seed in params$seeds){
 # bias_out <- parAvg(fullDat = dat4sim, impDat = imp_sim,hdir = params$hdir,resp = r, vars = var_list, mods=mods4sim, mets = met_list, biasVals = bias_names, debug = params$deb, xdebug=params$xdeb)
 # }
 # }
+
+### PROFILING THE CODE
+# if(FALSE){
+#   for(i in 1:2){
+#     # resp <- "is_u"
+#     for(resp in resp_list){
+#       col_list<- c(prVars,resp )# columns to select, as strings
+#       form_list <- formulas[[resp]]
+#       filename <- sprintf("out/rprof_%s_%s.out", resp, i)
+#       Rprof(filename)
+#       runSim(fullDat=dat4sim, 
+#              col_sel=col_list,
+#              mLists=metLists,
+#              forms=form_list,
+#              resp=resp,
+#              vars=var_list,
+#              mods=mods4sim,
+#              par=params
+#              )
+#       Rprof(NULL)
+#     }
+#     # filename <- paste0("rprof_",i,".out")
+#     
+#   }
+# }
+if(FALSE){
+    for(resp in resp_list){
+      col_list<- c(prVars,resp )# columns to select, as strings
+      form_list <- formulas[[resp]]
+      filename <- sprintf("out/prvis_%s.out", resp)
+      prv<- profvis::profvis(
+        runSim(fullDat=dat4sim, 
+               col_sel=col_list,
+               mLists=metLists,
+               forms=form_list,
+               resp=resp,
+               vars=var_list,
+               mods=mods4sim,
+               par=params
+               ),
+        prof_output = filename
+        )
+      htmlwidgets::saveWidget(prv, sprintf("profile_%s.html", resp))
+    }
+}
+
+if(FALSE){
+resp_list <- c("is_u", "HF_mis")
+    for(resp in resp_list){
+      col_list<- c(prVars,resp )# columns to select, as strings
+      form_list <- formulas[[resp]]
+      filename <- sprintf("out/prvis_%s.out", resp)
+      aDat <- mkSimDat(seeed=13, nd=dat4sim, vars=vars, convFact=TRUE)$amp
+      for(met in mets){
+        prv<- profvis::profvis(
+          mkImpSim(fullDat=dat4sim,
+                   ampDat=aDat,
+                   cols=col_list,
+                   resp=resp,
+                   mods=mods4sim,
+                   vars=vars,
+                   met=met,
+                   form_list=form_list
+                   
+                   ),
+          prof_output = filename
+          )
+        htmlwidgets::saveWidget(prv, sprintf("prof/profile2_%s_%s.html", resp, met))
+      }
+    }
+}
