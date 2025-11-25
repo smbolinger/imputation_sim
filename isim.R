@@ -73,6 +73,9 @@ levels(dat4sim$HF_mis) <- c(0,1)
 levels(dat4sim$is_u)   <- c(0,1)
  
 prVars <- c("species", "cam_fate", "obs_int", "nest_age", "fdate")
+
+cat("sort vars or not???")
+#vars <- sort( c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") )# all vars
 vars <-  c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") # all vars
 mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cf_cc","cc")# don't need full here?
 
