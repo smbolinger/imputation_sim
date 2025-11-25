@@ -191,7 +191,8 @@ mkSimDat <- function(seeed, nd, vars, facToNum=FALSE, method="amp", wt=TRUE, deb
   if(method=="amp"){
     dat4amp <- add_dummy(nd, debug=debug)
     set.seed(seed=seeed)
-    suppressWarnings(amp_out1 <- mice::ampute(dat4amp))
+    #suppressWarnings(amp_out1 <- mice::ampute(dat4amp))
+    suppressMessages(suppressWarnings(amp_out1 <- mice::ampute(dat4amp)))
     
     if(FALSE){
       out <- add_fact(amp_out1$amp,facToNum = T, debug=T)
