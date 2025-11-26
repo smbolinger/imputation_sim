@@ -29,7 +29,6 @@ params <- list(nrun=100,
                j = 50,
                m=20)
 
-if(win) cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 arg <- commandArgs(trailingOnly=TRUE)
 if(length(arg)==0){
 	cat("\n\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
@@ -56,6 +55,7 @@ if(length(arg)==0){
 }
 #########################################################################################
 
+if(params$win) cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 debugging <- FALSE # for uickly setting values when working in the file with the functions
 suffix <- sprintf("%sruns", params$nrun)
 if(params$j > params$nrun) stop("j must be less than or equal to nrun!")
@@ -66,12 +66,21 @@ mods4sim <- modList[c(1,8,16) ]
 names(mods4sim) <- c("m1", "m8", "m16")
 formulas <- readRDS("form_lists.rds")
 metLists <- readRDS("met_lists.rds")
+cat("\n>> methods for individual variables:\n")
+print(metLists)
 
 dat4sim <- read.csv("dat_complete.csv", stringsAsFactors = TRUE)
 dat4sim$cam_fate <- relevel(dat4sim$cam_fate, ref="H") # make 'H' the reference category
 dat4sim$species <- relevel(dat4sim$species, ref="LETE")
 levels(dat4sim$HF_mis) <- c(0,1)
 levels(dat4sim$is_u)   <- c(0,1)
+dat4sim <- dat4sim %>% mutate(nest_age = if_else(nest %in% c(10240, 20301, 30903, 30929), NA, nest_age))
+#cat("\n>> new nest ages:\n", table(dat4sim$nest_age, useNA="ifany"))
+cat("\n>> new missing nest age:\n", dat4sim$nest[is.na(dat4sim$nest_age)])
+dat4sim <- dat4sim[complete.cases(dat4sim),]
+#dat4sim <- dat4sim[!is.na(dat4sim$nest_age),]
+#dat4sim <- dat4sim %>% filter(nest_age == !is.na(nest_age))
+cat("\n>>>> remove NAs:\n", str(dat4sim))
 
 dat4fates <- dat4sim %>% 
   mutate(cam_fate = if_else(cam_fate=="S"|cam_fate=="Hu", "F", cam_fate)) %>% 
@@ -89,7 +98,8 @@ mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cf_cc"
 col_list<- c(prVars,params$resp )# columns to select, as strings
 form_list <- formulas[[params$resp]]
 seed_out <- FALSE
-now_dir <- paste0(params$hdir, params$outdir, sep="out/")
+now_dir <- paste(params$hdir, params$outdir, sep="out/")
+#cat("\n>>> save directory:", now_dir,"\n")
 if(!dir.exists(now_dir)) dir.create(now_dir)
 if(is.null(params$seeds)){
 	seed_out <- TRUE
