@@ -9,6 +9,7 @@ library(gt)
 library(gtsummary)
 suppressMessages(library(mice))
 suppressMessages(library(tidyverse))
+# look into tidytable for tidyverse syntax w/ data.table
 source("mice_functions.R")
 source("imp_sim_functions.R")
 source("missing_data.R")
