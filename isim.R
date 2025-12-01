@@ -7,6 +7,7 @@ library(brglm2) # penalized logistic regression
 library(CALIBERrfimpute) # could access using ::
 library(gt)
 library(gtsummary)
+library(data.table)
 suppressMessages(library(mice))
 suppressMessages(library(tidyverse))
 # look into tidytable for tidyverse syntax w/ data.table
@@ -59,55 +60,48 @@ if(length(arg)==0){
 }
 #########################################################################################
 
-if(params$win) cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
+#aprint <- function(x) print(c(head(as.data.frame(x), 3),"....", tail(as.data.frame(x), 3)))
+#aprint <- function(x) print(paste(c(head(as.data.frame(x), 3),"....", tail(as.data.frame(x), 3), collapse="\n")))
+#aprint <- function(x) print(paste(c(head((x), 3),"....", tail((x), 3), collapse="\n")))
+bprint <- function(x) print(rbind(head(x, 3), tail(x,3)))
 debugging <- FALSE # for uickly setting values when working in the file with the functions
-suffix <- sprintf("%sruns", params$nrun)
+if(params$win) cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
 if(params$j > params$nrun) stop("j must be less than or equal to nrun!")
 if(is.null(params$resp)) stop("no response variable specified!")
 
 modList <- readLines("modList.txt")
 mods4sim <- modList[c(1,8,16) ]
 names(mods4sim) <- c("m1", "m8", "m16")
+
+# for the imputation:
 formulas <- readRDS("form_lists.rds")
 metLists <- readRDS("met_lists.rds")
-betas    <- readRDS("betas.rds")
-
 cat("\n>> methods for individual variables:\n")
 print(metLists)
 
-#dat4sim <- read.csv("dat_complete.csv", stringsAsFactors = TRUE)
-#dat4sim$cam_fate <- relevel(dat4sim$cam_fate, ref="H") # make 'H' the reference category
-#dat4sim$species <- relevel(dat4sim$species, ref="LETE")
-#levels(dat4sim$HF_mis) <- c(0,1)
-#levels(dat4sim$is_u)   <- c(0,1)
-#dat4sim <- dat4sim %>% mutate(nest_age = if_else(nest %in% c(10240, 20301, 30903, 30929), NA, nest_age))
-#cat("\n>> new nest ages:\n", table(dat4sim$nest_age, useNA="ifany"))
-#cat("\n>> new missing nest age:\n", dat4sim$nest[is.na(dat4sim$nest_age)])
-#dat4sim <- dat4sim[complete.cases(dat4sim),]
-#dat4sim <- dat4sim[!is.na(dat4sim$nest_age),]
-#dat4sim <- dat4sim %>% filter(nest_age == !is.na(nest_age))
-#cat("\n>>>> remove NAs:\n", str(dat4sim))
-
-#dat4fates <- dat4sim %>% 
-#  mutate(cam_fate = if_else(cam_fate=="S"|cam_fate=="Hu", "F", cam_fate)) %>% 
-#  mutate(cam_fate= relevel(as.factor(cam_fate), ref="H"))
-# dat3fate
- 
-prVars <- c("species", "cam_fate", "obs_int", "nest_age", "fdate")
+# for creating the simulated data:
+betas <- readRDS("betas.rds") # this is a list of vectors or something
+mList <- readRDS('means.rds')
+cMat  <- readRDS('cormat.rds')
+fprob <- c('A'=0.1, 'F'=0.06,'D'=0.13, 'S'=0.06, 'H'=0.53, 'Hu'=0.13)
+sprob <- c('CONI'=0.32, 'LETE'=0.68)
+nnest <- ifelse(params$test==T, 100, 150) # number of simulated nests
 
 cat("sort vars or not???")
 #vars <- sort( c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") )# all vars
 vars <-  c("nest_age", "cam_fateD", "cam_fateA", "cam_fateF", "cam_fateHu", "cam_fateS", "speciesCONI", "speciesCONI:nest_age", "speciesCONI:obs_int", "obs_int", "fdate") # all vars
+prVars <- c("species", "cam_fate", "obs_int", "nest_age", "fdate")
 #mets <- c("default","pmm", "rf", "cart", "caliber","passive", "stratify","cf_cc","cc")# don't need full here?
-mets <- ifelse(params$test,c("default", "passive", "stratify"), c("default", "cart", "caliber","passive", "stratify","cf_cc","cc"))# don't need full here?
+mets <- ifelse(params$test==T,c("default", "passive", "stratify"), c("default", "cart", "caliber","passive", "stratify","cf_cc","cc"))# don't need full here?
 
 # resp <- "is_u"
 #col_list<- c(prVars,params$resp )# columns to select, as strings
-form_list <- formulas[[params$resp]]
-seed_out <- FALSE
+suffix <- sprintf("%sruns", params$nrun)
 now_dir <- paste(params$hdir, params$outdir, sep="out/")
 #cat("\n>>> save directory:", now_dir,"\n")
 if(!dir.exists(now_dir)) dir.create(now_dir)
+
+seed_out <- FALSE
 if(is.null(params$seeds)){
 	seed_out <- TRUE
 	params$seeds <- c(71358, 102891, 82985, 61389, 11153)
@@ -123,51 +117,41 @@ if(is.null(params$seeds)){
 	cat("\n>>> using default seed list, in new order:", params$seeds, "\t")
 }
 
+#form_list <- formulas[[params$resp]]
 #########################################################################################
 
-# cat("\n\n>> number of imputations:", params$m, class(params$m))
-#cat("\n****************************************************************************")
 cat("\n")
 cat("\n>> methods:", mets)
-# cat("\t\t>> & number of imputations:", params$m, class(params$m))
-#cat("  >> & no. imp.:", params$m)
-# cat("\n\n>> bias to be calculated:", bias_names, "\n")
-# cat("\n\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
-
-#cat("\n****************************************************************************")
 cat("\n")
 cat(sprintf("\n>> total reps: %s x %s", length(params$seeds), params$nrun)) 
-cat("\t>> response:", params$resp,"\n\t& cols for imputation:", col_list)
+#cat("\t>> response:", params$resp,"\n\t& cols for imputation:", col_list)
+cat("\t>> response:", params$resp)
 cat("\n\n****************************************************************************")
-#cat("\n>> output will be saved every", params$j, "runs to dir:", paste0(params$hdir,"out/",params$outdir))
 cat("\n>> output will be saved every", params$j, "runs to dir:", now_dir)
-#cat("\n****************************************************************************")
 cat("\n")
-#cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
-
-# cat(sprintf("\t\t>>> running simulation %s times. seed = %s\n\n", params$nrun, params$seed))
-# cat("\n********************************************************************************************")
 
 for (seed in params$seeds){
     res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim)))
     dimnames(res) <- list(sort(as.character(vars)),
-                          # c("pmm", "rf", "cart"),
                           as.character(mets),
                           as.character(1:params$nrun),
-                          # c("estimate", "2.5 %","97.5 %","fmi"),
                           c("estimate", "2.5 %","97.5 %"),
                           names(mods4sim)
                           )
 
     cat(sprintf(">>> running simulation %s times \t>>> seed = %s ", params$nrun, seed))
     cat("\t>> & no. imp.:", params$m, "\n\n")
-    for(mod in mods4sim){
+    for(mod in seq_along(mods4sim)){
+        # select the correct list of formulas and list of beta values!
+        beta_list <- betas[[mod]]
+        form_list <- formulas[[params$resp]]
         for(run in 1:params$nrun){
                 cat(run)
             # repeat this until you get a dataset w/o missing levels??
-            #mkSim <- function(resp, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug)
-            dat4sim <- mkSim(params$resp, mod, 150, cMat, mList, betas, fprob, sprob, prList, debug=params$deb)
+            dat4sim <- mkSim(params$resp, mods4sim[mod], nnest, cMat, mList, beta_list, fprob, sprob, prList, debug=params$deb)
             datNA <- mkSimDat(nd = dat4sim, seeed = run+seed, vars=vars, method = "amp", wt = TRUE, xdebug=params$xdeb, debug = params$deb, convFact = TRUE)
+            cat("\n*** datNA:\n")
+            print(datNA)
             datNA <- datNA$amp
             
             # prv<- profvis::profvis(
@@ -188,7 +172,7 @@ for (seed in params$seeds){
                                    form_list =form_list,
                                    vars=vars,
                                    #mods=mods4sim,
-                                   mod=mod,
+                                   mod=mods4sim[mod],
                                    met=mets[x],
                                    debug = params$debug,
                                    m=params$m, 
