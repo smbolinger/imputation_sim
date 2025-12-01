@@ -24,8 +24,10 @@ betaList <- readRDS("betas.rds")
 
 print(names(betaList))
 
-fprob <- c(0.1, 0.06, 0.13, 0.06, 0.53, 0.13)
-names(fprob) <- c("A", "H", "F", "D", "S", "Hu")
+# fprob <- c(0.1, 0.06, 0.13, 0.06, 0.53, 0.13)
+# names(fprob) <- c("A", "H", "F", "D", "S", "Hu")
+# fprob <- c( 0.53,0.1, 0.06, 0.13, 0.06, 0.13)
+# names(fprob) <- c( "H","A", "F", "D", "S", "Hu")
 
 sprob <- c(0.32, 0.68)
 names(sprob) <- c("CONI", "LETE")
@@ -46,60 +48,61 @@ prList[1] <- 1
 prList[length(prList)] <- str_replace(prList[length(prList)], pattern=":", replacement="*")
 print(prList)
 
-mkResp <- function(sDat, betas, form, debug=FALSE){
+mkResp <- function(sDat, betas, form, debug=FALSE, xdebug=FALSE){
     dummySim <- model.matrix(form, data = sDat)
     #dummySim <- as.data.table(model.matrix(form, data = sDat))
-    if(debug) cat("\n>> and with dummy variables:\n")
-    print(class(dummySim))
+    # if(xdebug) cat("\n>> and with dummy variables:\n") # ~*~*~*
+    # print(class(dummySim))
     #if(debug) aprint(dummySim)
     #if(debug) print.data.table(dummySim)
-    if(debug) bprint(dummySim)
+    # if(debug) bprint(dummySim)
     #if(debug) print(dummySim, topn=5, trunc.cols=T, )
-    if(debug) cat("\nbeta values, class:", class(betas))
-    if(debug) print(betas)
-    print(head(betas))
-    if(debug) cat("\n>>> multiplied by design matrix, class:", str(dummySim), class(dummySim), "\n")
+    # if(debug) cat("\n>>>> beta values, class:", class(betas), "\n\n") # ~*~*~*
+    # if(debug) print(betas)
+    # print(head(betas))
+    # if(debug) cat("\n>>> multiplied by design matrix, class:", str(dummySim), class(dummySim), "\n")
     #if(debug) aprint(dummySim)
     eta <- dummySim %*% betas
-    if(debug) cat("\nequals eta:\n")
-    if(debug) bprint(eta)
+    # if(debug) cat("\nequals eta:\n") # ~*~*~*
+    # if(debug) bprint(eta)
     y <- rbinom(nrow(dummySim), size = 1, prob = binomial()$linkinv(eta)) # The outcome    
     return(y)
 }
 
-mkSim <- function(resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE){
+mkSim <- function(resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE, xdebug=FALSE){
     fates <- names(fprob)
     spp   <- names(sprob)
-    if(debug) cat("\nfates:", fates, "& species:", spp)
-    if(debug){
-        cat("\ncoefficients, class:\n", class(betas))
-        print(betas)
-    }
+    if(debug) cat("\nfates:", fates, "& species:", spp) # ~*~*~*
+    # if(debug){ # ~*~*~*
+    #     cat("\ncoefficients, class:\n", class(betas))
+    #     print(betas)
+    # }
     simDat <- list()
     for (s in seq_along(spp)){
         sp <- spp[s]
         #simDat[[sp]] <- as.data.table(MASS::mvrnorm(n=s_size*sprob[s], mu=mList[[sp]], Sigma=cMat[[sp]]))
-        cat("\n>>> species:", sp, "\t& means:", mList[[sp]], "\t& correlation matrix:\n")
-        print(cMat[[sp]])
+        # cat("\n>>> species:", sp, "\t& means:", mList[[sp]], "\t& correlation matrix:\n") # ~*~*~*
+        # print(cMat[[sp]])
         simDat[[sp]] <- as.data.table(MASS::mvrnorm(n=round(s_size*sprob[s]), mu=mList[[sp]], Sigma=cMat[[sp]]))
-        cat("\nadding camera fates\n")
+        # cat("\n>> adding camera fates\n") # ~*~*~*
         simDat[[sp]][,cam_fate := sample(fates, size=nrow(simDat[[sp]]), replace=T, prob=fprob)]
     }
-    cat("\ncreated sim data")
+    cat("\n>>> created sim data") # ~*~*~*
     names(simDat) <- c("CONI", "LETE")
     sDat <- data.table::rbindlist(simDat, idcol="species", use.names=T, fill=T)
-    cat("\nmerged sim data for the two species")
+    cat(" - merged sim data for the two species") # ~*~*~*
     sDat[,cam_fate := relevel(as.factor(sDat[,cam_fate]), ref="H")]
     sDat[,species  := relevel(as.factor(sDat[,species] ), ref="LETE")]
-    cat("\nreleved factors")
+    cat(" - releved factors") # ~*~*~*
     form <- as.formula(mod)
     #dummySim <- model.matrix(mod, data = sDat)
-    if(debug) cat("\n>>>>> simulated data frame w/o dummy variables:\n")
-    if(debug) print(sDat)
+    # if(xdebug) cat("\n>>>>> simulated data frame w/o dummy variables:\n") # ~*~*~*
+    # if(xdebug) print(sDat)
     #sDat[,is_u := mkResp(sDat, as.matrix(betas[[1]]), form, debug=debug )]
     #sDat[,HF_mis := mkResp(sDat, as.matrix(betas[[2]]), form, debug=debug )]
     sDat[,is_u := mkResp(sDat, (betas[[1]]), form, debug=debug )]
     sDat[,HF_mis := mkResp(sDat, (betas[[2]]), form, debug=debug )]
+    cat(' - added response variables\n') # ~*~*~*
     #for (r in seq_along(resp_list)){
     #    #resp <- mkResp(sDat, betas, form, debug=debug)
     #    sDat[,resp_list[r] := mkResp(sDat, betas[[r]], form, debug=debug)]
@@ -114,14 +117,14 @@ mkSim <- function(resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prLis
     #y <- rbinom(nrow(dummySim), size = 1, prob = binomial()$linkinv(eta)) # The outcome    
     #sDat[,is_u := y]
     #sDat[,is_u := resp]
-    if(debug){
-        fitReal2 <- summary(glm(is_u ~ nest_age * species + obs_int + cam_fate + fdate,
-                           family=binomial,
-                           data=sDat,
-                           method=brglm2::brglmFit))
-        cat("\nmodel fit for simulated data:\n")
-        print(fitReal2)
-    }
+    # if(xdebug){ # ~*~*~*
+    #     fitReal2 <- summary(glm(is_u ~ nest_age * species + obs_int + cam_fate + fdate,
+    #                        family=binomial,
+    #                        data=sDat,
+    #                        method=brglm2::brglmFit))
+    #     cat("\n>>>> model fit for simulated data:\n")
+    #     print(fitReal2)
+    # }
     return(sDat)
 }
 

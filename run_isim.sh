@@ -14,8 +14,9 @@ OUT="${1}.out" # brackets (string concatenation) to prevent '.out' being interpr
 if [ "$2" = "test" ]; then 
 	TEST="test-${1}.out"
 	echo ">>> running as test; saving to $TEST"
-	nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$TEST" 2>&1 "$1" "s333" "m5" "r3" "j1" "deb" "test" &
-	echo ">>> args: $1 s333 m5 r3 j1 deb test"
+	#nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$TEST" 2>&1 "$1" "s333" "m5" "r3" "j1" "deb" "test" &
+	nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$TEST" 2>&1 "s333" "m5" "r3" "j1" "deb" "test" &
+	echo ">>> args: s333 m5 r3 j1 deb test"
 	echo -e "\t\t>>> PID: $! \n"
 	echo -e "\n\n\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n" >> "$TEST"  
 	echo -e "\tDATE: $DATE \t\tTIME: $NOW \t\tPID: $! \n" >> "$OUT"
@@ -27,7 +28,8 @@ else
 	REP=100
 	SAVE=50
 	nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "m$IMP" "$1" "r$REP" "j$SAVE" & 
-	echo "running with $1 as response variable: $IMP imputations, $REP reps; output to $OUT"
+	#echo "running with $1 as response variable: $IMP imputations, $REP reps; output to $OUT"
+	echo " $IMP imputations, $REP reps; output to $OUT"
 	echo -e "\t\t>>> PID: $! \n"
 	# -e allows \n to be interpreted as newline
 	echo -e "\n\n\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n" >> "$OUT"  
