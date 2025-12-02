@@ -16,8 +16,8 @@ if [ "$2" = "test" ]; then
         nRun=3
         nSave=1
 	#echo ">>> running as test; appending output to $TEST"
-	echo ">>> running as test; seed=$1, $nImp imputations, $nRun reps; appending output to $OUT"
-        deb=2
+	echo "\n>>> running as test; seed=$1, $nImp imputations, $nRun reps; appending output to $OUT"
+        deb=1
         testOn="test"
 else
 	#echo "running with $1 as name: $IMP imputations, $REP reps; output to $OUT"
@@ -32,7 +32,7 @@ else
         else
             deb=0
         fi   
-	echo "seed=$1, $nImp imputations, $nRep reps; output appended to $OUT"
+	echo "\n>>> seed=$1, $nImp imputations, $nRep reps; output appended to $OUT"
 fi
 
 #nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "m5" "r3" "j1" "deb" "xdeb" "test" &
@@ -51,7 +51,7 @@ echo -e "\n\n\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][
 echo -e "\tDATE: $DATE \t\tTIME: $NOW \t\tPID: $! \n" >> "$OUT"
 echo -e "[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n\n" >> "$OUT"  
 
-echo -e "\t\t>>> PID: $! \n" # -e allows \n to be interpreted as newline
+echo -e "\n\t>>> PID: $! " # -e allows \n to be interpreted as newline
 echo -e "\t>>>>>> *DEBUG LEVEL*: $deb\n"
 # use flag file if you want something to run only once per day (like printing DATE)
 #echo "$DATE" > isim_flag.out
