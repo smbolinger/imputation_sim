@@ -194,8 +194,8 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, form_list, met_l
         # ### *~*~*~*~* #######
         #if(debug) cat("\n===== complete-case analysis \t resp:", resp," =====\n")# ~*~*~*
         for(r in seq_along(resp_list)){
-            vlist <- colnames(model.matrix(as.formula(paste0(resp, modd)),data = aDat))[-1]
             resp <- resp_list[r]
+            vlist <- colnames(model.matrix(as.formula(paste0(resp, modd)),data = aDat))[-1]
             cols <- c(resp, pr_list)
             #if(debug)cat("\nvars in this df:", vlist,"\t& cols for imputation:", cols) # ~*~*~*
             ampDat <- aDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
