@@ -1,6 +1,9 @@
 ########################################################################################
 ###### IMPORT FUNCTIONS ################################################################
 ########################################################################################
+
+## NOTE: if you update this document, need to update the debug_imp_sim_func.R doc as well!
+
 options(include.full.call.stack = FALSE)               # or configure it globally
 # source("missingness_tab.R")
 debugging <- FALSE # for uickly setting values when working in the file with the functions
@@ -28,7 +31,7 @@ add_dummy <- function(dat, debug=FALSE){
     # dat<- dat[, c("obs_int", "nest_age", "fdate", "HF_mis", "is_u", "speciesCONI")]
     # dat4amp <- cbind(dat4amp, dummy_vars, speciesLETE, speciesCONI)
     dat <- cbind(dat, dummy_vars)
-    print(class(dat))
+    #print(class(dat)) # ~*~*~*
     # if (debug) cat("\n\n>> add dummy variables and remove factors. new columns:\n", names(dat))
     return(dat)
 }
@@ -41,7 +44,7 @@ if(FALSE){
   dat <-amp_out_wt$amp
 }
 add_fact <- function(dat, facToNum=FALSE, debug=FALSE){ 
-    cat("\n NOTE: can speed up conversion back to factor with tidytable\n")
+    #cat("\n NOTE: can speed up conversion back to factor with tidytable\n")
     # I already know what the dummy var names are in this case; not a general purpose function
     # dat <- amp_out$amp
     # if(is.list(dat)) dat <- dat$amp
@@ -97,7 +100,9 @@ add_fact <- function(dat, facToNum=FALSE, debug=FALSE){
     # dat[rem_col]
     # dat <- dat[,-rem_col]
     dat <- dat[,-which(names(dat) %in% rem_col)]
-    return(as.data.table(dat))
+    #return(as.data.table(dat))
+    return(dat)
+    #return(as.matrix(dat))
     # there MUST be a shorter way to do this, using regex?
     # fate_letter <- str_extract_all(dat$)
     # dat <- dat %>% mutate(cam_fate = case_when())
@@ -109,7 +114,7 @@ add_fact <- function(dat, facToNum=FALSE, debug=FALSE){
 ########################################################################################
 
 mkSimDat <- function(seeed, nd, mpatt, wts, new_prop=0.2, patt_freq=c(0.45,0.45,0.1),wt=TRUE, debug=FALSE, xdebug=FALSE, convFact=FALSE, facToNum=FALSE){
-  cat("mkSimDat seed=", seeed, class(seeed))
+  #cat("mkSimDat seed=", seeed, class(seeed))
   # if(method=="amp"){
     dat4amp <- add_dummy(nd, debug=debug)
     set.seed(seed=seeed)
@@ -118,7 +123,7 @@ mkSimDat <- function(seeed, nd, mpatt, wts, new_prop=0.2, patt_freq=c(0.45,0.45,
     is_miss <- colnames(mpatt)[!colnames(mpatt) %in% no_miss]
     new_order <- c(is_miss, no_miss)
     ### *~*~*~*~* #######
-    if(xdebug) cat("\n\n>> reorder columns:", new_order)
+    #if(xdebug) cat("\n\n>> reorder columns:", new_order)
     dat4amp <- dat4amp %>% select(all_of(new_order)) # reorder the columns to match the matrix
     
     suppressWarnings(amp_out_wt <- mice::ampute(dat4amp, prop = new_prop, patterns = mpatt, freq = patt_freq,weights = wts))
@@ -172,7 +177,7 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, form_list, met_l
    # print(str(ampDat))
     # bprint(aDat)
     # vlist <- colnames(ampDat)
-    vlist <- colnames(model.matrix(as.formula(paste0(resp, modd)),data = aDat))[-1]
+    #vlist <- colnames(model.matrix(as.formula(paste0(resp, modd)),data = aDat))[-1]
     # if(debug) cat("\n*** vars in the df:  ", vlist)
     # colnames(vlist)
     # ampDat <- add_fact(ampDat) # convert dummies back to factor
@@ -187,30 +192,24 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, form_list, met_l
     #dimnames(ret) <- list(vars, c( "estimate", "2.5 %", "97.5 %"))
     if (met == "cc"){
         # ### *~*~*~*~* #######
-        if(debug) cat("\n===== complete-case analysis \t resp:", resp," =====\n")# ~*~*~*
+        #if(debug) cat("\n===== complete-case analysis \t resp:", resp," =====\n")# ~*~*~*
         for(r in seq_along(resp_list)){
+            vlist <- colnames(model.matrix(as.formula(paste0(resp, modd)),data = aDat))[-1]
             resp <- resp_list[r]
             cols <- c(resp, pr_list)
-            cat("\nvars in this df:", vlist)
-            cat("\t& cols for imputation:", cols) # ~*~*~*
+            #if(debug)cat("\nvars in this df:", vlist,"\t& cols for imputation:", cols) # ~*~*~*
             ampDat <- aDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
             dat1 <- ampDat[complete.cases(ampDat),]
-            # ### *~*~*~*~* #######
-            # if(debug) cat("\n\n>> data:\n") # ~*~*~*
-            # if(debug) print(str(dat1))
             fit = glm(as.formula(paste0(resp, modd)), data=dat1, family=fam, method=regMet, control=brglmControl(maxit=iter))
             vals <- cbind(coef(fit)[-1], confint(fit)[-1,]) # confint has 2 columns, so need comma
-            cat("\n>> vals:")
-            print(vals)# ~*~*~
-            # cat("\n>> ret to fill:")
-            # print(ret[vlist,,r])# ~*~*~
+            #cat("\n>> vals:") # ~*~*~*
+            #print(vals)# ~*~*~
             rownames(vals) <- names(coef(fit))[-1]
             colnames(vals) <-  c("estimate", "2.5 %", "97.5 %") # this doesn't work if not a df
             
-            #    vmatch <- match(rownames(vals), rownames(ret)) # col 1 of vals is the row names
             ret[vlist,,r]  <- as.matrix(vals)# remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
-            if(debug) cat("\nret, FILLED IN :")
-            if(debug) print(ret[,,r])
+            #if(debug) cat("\nret, FILLED IN :") # ~*~*~*
+            #if(debug) print(ret[,,r])
         }
         return(ret)
 
@@ -219,68 +218,60 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, form_list, met_l
         # for(r in resp_list){
         for(r in seq_along(resp_list)){
             resp <- resp_list[r]
-            if (debug) cat("\n===== method:", met)
-            if(debug) cat("\t resp:", resp," =====\n")
+            #if (debug) cat("\n===== method:", met, "\t resp:", resp," =====\n")
+            vlist <- colnames(model.matrix(as.formula(paste0(resp, modd)),data = aDat))[-1]
             cols <- c(resp, pr_list)
-            if(debug)cat("\nvars in this df:", vlist)
-            if(debug) cat("\t& cols for imputation:", cols) # ~*~*~*
+            #if(debug)cat("\nvars in this df:", vlist,"\t& cols for imputation:", cols) # ~*~*~*
             cfates <- paste0("cam_fate", c("H", "A", "D", "F", "Hu", "S"))
-            # if (met=="cf_cc") ampDat <- ampDat %>% select(all_of(cols)) %>% filter(!is.na(cam_fate))
             # collapse pkg might be faster - https://stackoverflow.com/questions/77679416/drop-rows-with-na-in-multiple-columns
             ampDat <- aDat %>% select(all_of(cols)) %>% droplevels() # need to select the cols that are relevant for mod?
             if (met=="cf_cc") ampDat <- ampDat  %>% filter(!is.na(cam_fate))
             # if (met=="cf_cc") ampDat <- ampDat %>% filter(if_any(cfates, ~ !is.na(.)))
               #for(y in seq_along(mods)){
                 # needs to be a named list; but if you keep the names, it doesn't drop NA...
-            # print(met_list)
             # cat("\n<><><><><>")
             # print(dimnames(met_list))
-            # metList <- met_list[resp,,met,mod]
             metList <- met_list[resp,,met]
             # cat("\ngot method list")
-            # ampDat <- ampDat %>% select(all_of(cols)) %>% droplevels() # need to select the cols that are relevant for mod?
             inters <- sapply(modd,  function(x)  str_extract_all(x, "\\w+(?=\\s\\*)|(?<=\\*\\s)\\w+"))[[1]]
             inter <- paste(inters, collapse=".")
-            cat("inter=", inter)
-            # if(met=="passive" & length(inters)!=0)  ampDat[inter] <- NA
-            if(met=="passive" & length(inters)!=0)  ampDat[, ..inter := NA]
+            #cat("\n\n####### inter=", inter,"\n") # ~*~*~*
+            if(met=="passive" & length(inters)!=0)  ampDat[inter] <- NA
+            #print(names(ampDat))
+            #if(met=="passive" & length(inters)!=0)  ampDat[, ..inter := NA]
             # if(met=="passive" & length(inters)!=0)  ampDat[, (inter) := NA]
             # if(met=="passive" & length(inters)!=0) set(ampDat, "inter", NA)
             # if(met=="passive" & length(inters)!=0) set(ampDat, as.character(inter), NA)
-            
-            print(ampDat[,inter])
+            #print(ampDat[,inter])
             names(metList)[6] <- resp
             names(metList)[7] <- inter
             metList <- metList[!is.na(metList)]
             if(all(is.na(metList))) metList=NULL
 
             ## *~*~*~*~*
-            cat("\nMETHOD LIST for",met,"-") # ~*~*~*
-            print(metList)
-            cat("\n")
+            #cat("\nMETHOD LIST for",met,"-") # ~*~*~*
+            #print(metList)
+            #cat("\n")
 
             # frmla <- lapply(form_list[[mod]][[met]], function(x) as.formula(paste(x[[1]], "~", x[[2]])))
             # cat("formula list:")
             # print(form_list)
             frmla <- lapply(form_list[[resp]][[met]], function(x) as.formula(paste(x[[1]], "~", x[[2]])))
                 ## *~*~*~*~*
-            if(debug) cat("\nmice formulas:\n") # ~*~*~*
-            if(debug) print(frmla)
+            #if(debug) cat("\nmice formulas:\n") # ~*~*~*
+            #if(debug) print(frmla)
+            #if(debug) cat(paste(frmla, collapse="\t\t"))
 
-                # 3: In all(metList) : coercing argument of type 'character' to logical
-                # if(is.na(all(metList))) metList=NULL # this is incorrect I think
-                # mlt <- metList[!is.na(metList)]
-                # dimnames(metList)
             impCall <- case_when(met=="stratify"~ "impStrat(ampDat, met=metList,formulas=frmla, col_sel=cols)",
                        met=="passive" ~ "mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)",
                        .default="mice::mice(ampDat, method=metList, m=m, print=FALSE)"
             )
             imp <- eval(parse(text=impCall))
 
-            if(length(imp$loggedEvents > 0)) { # ~*~*~*
-                cat(sprintf("\n*** LOGGED EVENTS FOR METHOD %s*******************************\n", met))
-                print(imp$loggedEvents)
-            }
+            #if(length(imp$loggedEvents > 0)) { # ~*~*~*
+            #    cat(sprintf("\n*** LOGGED EVENTS FOR METHOD %s*******************************\n", met))
+            #    print(imp$loggedEvents)
+            #}
             # if(impplot) visImp(imp)  # ~*~*~*
             # if(debug) cat("\n>> fitting model", mods[y])
             fit = with(imp,
@@ -294,22 +285,13 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, form_list, met_l
             # print(pool)
             rownames(pool) = pool[,"term"]
             pool <- pool %>% filter(term %in% vars)
-            cat("\nOUTPUT:") # ~*~*~*
-            print(pool[,c("estimate", "2.5 %", "97.5 %")])
+            #cat("\nOUTPUT:\n") # ~*~*~*
+            #print(pool[,c("estimate", "2.5 %", "97.5 %")])
             # cat("\nPUT IT HERE:")
             # print(ret[vlist,,r])
-            #vmatch <- match(pool[,1], rownames(ret)) # col 1 of vals is the row names
-            # ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %", "fmi")])
-            #ret[vmatch,,y] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %")])
             ret[vlist,,r] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %")])
-            if(debug) cat("\nret, FILLED IN :")
-            if(debug) print(ret[,,r])
-            # if(xdebug) { # ~*~*~*
-            #    cat("\n\n>> pooled model fit:\n")
-            #str(pool)
-            #    print(head(pool[,c("term", "estimate", "2.5 %", "97.5 %")]))
-            # }
-            #}
+            #if(debug) cat("\nret, FILLED IN:\n")
+            #if(debug) print(ret[,,r])
         }
     # if(xdebug) cat("\n\nret:\n") # ~*~*~*
     #    cat("\n\nret:\n")
@@ -349,4 +331,92 @@ visImp <- function(imp){
 
 
 }
+
+########################################################################################
+###### MAKE SIMULATED DATA ###################################################################
+########################################################################################
+
+
+mkResp <- function(sDat, betas, form, debug=FALSE, xdebug=FALSE){
+    dummySim <- model.matrix(form, data = sDat)
+    #dummySim <- as.data.table(model.matrix(form, data = sDat))
+    # if(xdebug) cat("\n>> and with dummy variables:\n") # ~*~*~*
+    # print(class(dummySim))
+    #if(debug) aprint(dummySim)
+    #if(debug) print.data.table(dummySim)
+    # if(debug) bprint(dummySim)
+    #if(debug) print(dummySim, topn=5, trunc.cols=T, )
+    # if(debug) cat("\n>>>> beta values, class:", class(betas), "\n\n") # ~*~*~*
+    # if(debug) print(betas)
+    # print(head(betas))
+    # if(debug) cat("\n>>> multiplied by design matrix, class:", str(dummySim), class(dummySim), "\n")
+    #if(debug) aprint(dummySim)
+    eta <- dummySim %*% betas
+    # if(debug) cat("\nequals eta:\n") # ~*~*~*
+    # if(debug) bprint(eta)
+    y <- rbinom(nrow(dummySim), size = 1, prob = binomial()$linkinv(eta)) # The outcome    
+    return(y)
+}
+
+mkSim <- function(resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE, xdebug=FALSE){
+    fates <- names(fprob)
+    spp   <- names(sprob)
+    #if(debug) cat("\nfates:", fates, "& species:", spp) # ~*~*~*
+    # if(debug){ # ~*~*~*
+    #     cat("\ncoefficients, class:\n", class(betas))
+    #     print(betas)
+    # }
+    simDat <- list()
+    for (s in seq_along(spp)){
+        sp <- spp[s]
+        #simDat[[sp]] <- as.data.table(MASS::mvrnorm(n=s_size*sprob[s], mu=mList[[sp]], Sigma=cMat[[sp]]))
+        # cat("\n>>> species:", sp, "\t& means:", mList[[sp]], "\t& correlation matrix:\n") # ~*~*~*
+        # print(cMat[[sp]])
+        simDat[[sp]] <- as.data.table(MASS::mvrnorm(n=round(s_size*sprob[s]), mu=mList[[sp]], Sigma=cMat[[sp]]))
+        # cat("\n>> adding camera fates\n") # ~*~*~*
+        simDat[[sp]][,cam_fate := sample(fates, size=nrow(simDat[[sp]]), replace=T, prob=fprob)]
+    }
+    #cat("\n>>> created sim data") # ~*~*~*
+    names(simDat) <- c("CONI", "LETE")
+    sDat <- data.table::rbindlist(simDat, idcol="species", use.names=T, fill=T)
+    #cat(" - merged sim data for the two species") # ~*~*~*
+    sDat[,cam_fate := relevel(as.factor(sDat[,cam_fate]), ref="H")]
+    sDat[,species  := relevel(as.factor(sDat[,species] ), ref="LETE")]
+    #cat(" - releved factors") # ~*~*~*
+    form <- as.formula(mod)
+    #dummySim <- model.matrix(mod, data = sDat)
+    # if(xdebug) cat("\n>>>>> simulated data frame w/o dummy variables:\n") # ~*~*~*
+    # if(xdebug) print(sDat)
+    #sDat[,is_u := mkResp(sDat, as.matrix(betas[[1]]), form, debug=debug )]
+    #sDat[,HF_mis := mkResp(sDat, as.matrix(betas[[2]]), form, debug=debug )]
+    sDat[,is_u := mkResp(sDat, (betas[[1]]), form, debug=debug )]
+    sDat[,HF_mis := mkResp(sDat, (betas[[2]]), form, debug=debug )]
+    #cat(' - added response variables\n') # ~*~*~*
+    #for (r in seq_along(resp_list)){
+    #    #resp <- mkResp(sDat, betas, form, debug=debug)
+    #    sDat[,resp_list[r] := mkResp(sDat, betas[[r]], form, debug=debug)]
+    #}
+
+    #dummySim <- model.matrix(form, data = sDat)
+    #if(debug) cat("\ndesign matrix, class:\n", str(dummySim))
+    #if(debug) print(dummySim)
+    #eta <- dummySim %*% betas
+    #if(debug) cat("\nmultiplied by beta values:\n")
+    #print(eta)
+    #y <- rbinom(nrow(dummySim), size = 1, prob = binomial()$linkinv(eta)) # The outcome    
+    #sDat[,is_u := y]
+    #sDat[,is_u := resp]
+    # if(xdebug){ # ~*~*~*
+    #     fitReal2 <- summary(glm(is_u ~ nest_age * species + obs_int + cam_fate + fdate,
+    #                        family=binomial,
+    #                        data=sDat,
+    #                        method=brglm2::brglmFit))
+    #     cat("\n>>>> model fit for simulated data:\n")
+    #     print(fitReal2)
+    # }
+    return(sDat)
+}
+
+#m <- mkSim(resp="is_u", mod=mods4sim[[1]], s_size=500, cMat=cMat, mList=mList, betas=betas, fprob=fprob, sprob=sprob, prList=prList, debug=TRUE)
+
 

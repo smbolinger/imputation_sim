@@ -9,35 +9,50 @@ DATE=$(date +'%d/%b')
 NOW=$(date +'%H:%M:%S')
 # this was Wodehoues: cxf
 #OUT="${1}${2}.out" # brackets (string concatenation) to prevent '.out' being interpreted as part of var name
-OUT="${1}.out" # brackets (string concatenation) to prevent '.out' being interpreted as part of var name
 #TEST=5 
 if [ "$2" = "test" ]; then 
-	TEST="test-${1}.out"
-	echo ">>> running as test; saving to $TEST"
-	#nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$TEST" 2>&1 "$1" "s333" "m5" "r3" "j1" "deb" "test" &
-	nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$TEST" 2>&1 "s333" "m5" "r3" "j1" "deb" "test" &
-	echo ">>> args: s333 m5 r3 j1 deb test"
-	echo -e "\t\t>>> PID: $! \n"
-	echo -e "\n\n\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n" >> "$TEST"  
-	echo -e "\tDATE: $DATE \t\tTIME: $NOW \t\tPID: $! \n" >> "$OUT"
-	#echo -e "\t\tDATE: $NOW \t\tPID: $! \n" >> "$TEST"
-	echo -e "[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n\n" >> "$TEST"  
-
+	OUT="test-${1}.out"
+        nImp=5
+        nRun=3
+        nSave=1
+	#echo ">>> running as test; appending output to $TEST"
+	echo ">>> running as test; seed=$1, $nImp imputations, $nRun reps; appending output to $OUT"
+        deb=2
+        testOn="test"
 else
-	IMP=70
-	REP=100
-	SAVE=50
-	nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "m$IMP" "$1" "r$REP" "j$SAVE" & 
-	#echo "running with $1 as response variable: $IMP imputations, $REP reps; output to $OUT"
-	echo " $IMP imputations, $REP reps; output to $OUT"
-	echo -e "\t\t>>> PID: $! \n"
-	# -e allows \n to be interpreted as newline
-	echo -e "\n\n\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n" >> "$OUT"  
-	#echo -e "\t\tPID: $! \n" >> "$OUT"
-	echo -e "\tDATE: $DATE \t\tTIME: $NOW \t\tPID: $! \n" >> "$OUT"
-	echo -e "[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n\n" >> "$OUT"  
+	#echo "running with $1 as name: $IMP imputations, $REP reps; output to $OUT"
+        OUT="${1}.out" # brackets (string concatenation) to prevent '.out' being interpreted as part of var name
+        nImp=25
+        nRun=100
+        nSave=50
+        testOn=""
+
+        if [ "$2" = "debug" ]; then
+            deb=1
+        else
+            deb=0
+        fi   
+	echo "seed=$1, $nImp imputations, $nRep reps; output appended to $OUT"
 fi
 
+#nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "m5" "r3" "j1" "deb" "xdeb" "test" &
+# most of these args get handled in the isim.R script - not sure if that's better or worse than here:
+#if [ "$deb"==1 ]; then
+if [ "$deb" -eq 1 ]; then
+    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "m$nImp" "r$nRun" "j$nSave" "deb" "$testOn"&
+elif [ "$deb" -eq 2 ]; then
+    echo -e "extra debug!\n"
+    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "m$nImp" "r$nRun" "j$nSave" "deb" "xdeb" "$testOn"&
+else
+    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "m$nImp" "r$nRun" "j$nSave" "$testOn"&
+fi
+
+echo -e "\n\n\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n" >> "$OUT"  
+echo -e "\tDATE: $DATE \t\tTIME: $NOW \t\tPID: $! \n" >> "$OUT"
+echo -e "[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n\n" >> "$OUT"  
+
+echo -e "\t\t>>> PID: $! \n" # -e allows \n to be interpreted as newline
+echo -e "\t>>>>>> *DEBUG LEVEL*: $deb\n"
 # use flag file if you want something to run only once per day (like printing DATE)
 #echo "$DATE" > isim_flag.out
 #if [ "$1"="HF_mis" ]; then
