@@ -1,54 +1,70 @@
 #!/bin/bash
 
 
-echo "argument(s) passed: $1 $2"
+if [ $# -eq 0 ]; then
+    echo ">> No arguments provided!"
+    echo ">> Usage: $0 - [seed] [test (optional)] [debug (optional)]"
+    exit 1
+else
+    echo "argument(s) passed: $1 $2 $3"
+fi
 #could read seed from file here instead, and then pass to R script:
 #seed=$(head -n 1 seed.flag)
 
 DATE=$(date +'%d/%b')
 NOW=$(date +'%H:%M:%S')
+FILE="/home/wodehouse/Projects/fate_glm/isim.R"
 # this was Wodehoues: cxf
 #OUT="${1}${2}.out" # brackets (string concatenation) to prevent '.out' being interpreted as part of var name
 #TEST=5 
 if [ "$2" = "test" ]; then 
 	OUT="test-${1}.out"
+        testOn="test"
+        ampWt=3
+        suff="aw$ampWt"
         nImp=5
         nRun=3
         nSave=1
+        #ampWt=1
 	#echo ">>> running as test; appending output to $TEST"
-	echo "\n>>> running as test; seed=$1, $nImp imputations, $nRun reps; appending output to $OUT"
-        deb=1
-        testOn="test"
+	echo -e "\n>>> running as test; seed=$1, $nImp imputations, $nRun reps; appending output to $OUT"
+        if [ "$3" = "debug" ]; then
+            deb=2
+        else
+            deb=1
+        fi
 else
 	#echo "running with $1 as name: $IMP imputations, $REP reps; output to $OUT"
         OUT="${1}.out" # brackets (string concatenation) to prevent '.out' being interpreted as part of var name
+        ampWt=3
+        suff="aw$ampWt"
         nImp=25
-        nRun=100
+        nRun=250
         nSave=50
         testOn=""
-
+	echo -e "\n>>> seed=$1, $nImp imputations, $nRun reps; output appended to $OUT"
         if [ "$2" = "debug" ]; then
             deb=1
         else
             deb=0
         fi   
-	echo "\n>>> seed=$1, $nImp imputations, $nRep reps; output appended to $OUT"
 fi
 
 #nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "m5" "r3" "j1" "deb" "xdeb" "test" &
 # most of these args get handled in the isim.R script - not sure if that's better or worse than here:
 #if [ "$deb"==1 ]; then
 if [ "$deb" -eq 1 ]; then
-    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "m$nImp" "r$nRun" "j$nSave" "deb" "$testOn"&
+    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "deb" "$testOn"&
 elif [ "$deb" -eq 2 ]; then
-    echo -e "extra debug!\n"
-    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "m$nImp" "r$nRun" "j$nSave" "deb" "xdeb" "$testOn"&
+    #echo -e "extra debug!\n"
+    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "deb" "xdeb" "$testOn"&
 else
-    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "m$nImp" "r$nRun" "j$nSave" "$testOn"&
+    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "$testOn"&
 fi
 
 echo -e "\n\n\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n" >> "$OUT"  
 echo -e "\tDATE: $DATE \t\tTIME: $NOW \t\tPID: $! \n" >> "$OUT"
+echo -e "\tFILE: $FILE\n" >> "$OUT"
 echo -e "[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n\n" >> "$OUT"  
 
 echo -e "\n\t>>> PID: $! " # -e allows \n to be interpreted as newline
