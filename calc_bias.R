@@ -35,7 +35,7 @@ names(mods4sim) <- c("m1", "m8", "m16")
 cat("\n>> models:\n")
 print(mods4sim)
 
-patt <- "100runs"
+patt <- "100runs|250runs"
 #fnlist <- list.files(path = paste0(params$hdir, params$dir_ext), pattern = "^runs0to50.*|^runs50to100.*", full.names =T)
 fnlist <- list.files(path = paste0(params$hdir, params$dir_ext), pattern = patt, full.names =T)
 #if(params$debug) cat("\n\t>> filename list:")
@@ -88,8 +88,13 @@ cat("\n>>>> output directory:", now_dir, "exists?", dir.exists(now_dir))
 
 ## Group the different seed output together by model 
 for(z in seq_along(mods4sim)){
+    cat("\n<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>")
+    cat("\n\t\t\t MODEL:", mods4sim[z])
+    cat("\n<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>")
     mod     <- mods4sim[z]
     cat("\n\n>> files for this model:\n", mods==mod)
+    cat("\n\n>> files for this model:\n", length(flist[mods==mod]), "\n")
+    if(length(flist[mods==mod])<1) stop(sprintf("No files matching model %s. Exiting script.", mod))
     impDat <- abind::abind(flist[mods==mod], along=3)
     ## double bracket doesn't work'
     #impDat <- abind::abind(flist[[mods==mod]], along=3)
@@ -113,13 +118,15 @@ for(z in seq_along(mods4sim)){
         cat("\ntrue values:\n")
         print(trueVals)
 
-        bias <- array(NA, dim = c(length(vars), length(mets), length(biasVals), length(mods4sim), length(resp) ) )
+        bias <- array(NA, dim = c(length(vars), length(mets), length(biasVals), length(mods4sim), length(rlist) ) )
         dimnames(bias) <- list(sort(as.character(vars)),
                                # c("pmm", "rf", "cart"),
                                as.character(mets),
                                as.character(biasVals),
-                               names(mods4sim))
+                               names(mods4sim),
+                               rlist)
         if(params$debug) cat("\nempty array to store bias values:" )
+        if(params$debug) print(str(bias))
         if(params$debug) print(dimnames(bias))
 
         ## Loop through the predictor variables and store the bias values to the matrix
@@ -127,8 +134,10 @@ for(z in seq_along(mods4sim)){
             cat(sprintf("\n----- VARIABLE: %s ------------------------------------------------\n", v))
             if(params$debug) cat(sprintf("\n>> output for variable %s:\n", v))
             #if(params$debug) print(impDat[v,,,,z,resp])
-            if(params$debug) print(str(impDat))
+            #if(params$debug) print(str(impDat))
+            #if
             impDat[v,"cc",,,z,resp] <- exp(impDat[v,"cc",,,z,resp]) 
+            if(params$debug) print(str(impDat[v,,,,z,resp]))
             avg <- apply(impDat[v, , , ,z,resp],MARGIN=c(1,3),FUN = mean, na.rm=TRUE)
             sdev <- apply(impDat[v, , , ,z,resp],MARGIN=c(1,3),FUN = sd, na.rm=TRUE)
             #print(impDat[v,,1:5,1,z])
@@ -138,7 +147,7 @@ for(z in seq_along(mods4sim)){
                   #cat("\nfirst 5 reps:\n")
                   #print(impDat[v,,1:5,,z])
             if(params$debug){
-                  cat("\naverage of estimate for mod 1:\n")
+                  cat(sprintf("\naverage of estimate for mod %s:\n",z))
                   #print(apply(impDat[v,,,,z], FUN=mean, MARGIN=c(1,3)))
                   #print(impDat[v,,,z])
                   print(apply(impDat[v,,,,z,resp], FUN=mean, MARGIN=c(1,3)))
@@ -149,13 +158,15 @@ for(z in seq_along(mods4sim)){
                   print(avg)
             }
             #print(str(avg))
-
+            cat("\n>>> storing vals to matrix\n")
             bias[v, ,"value",z,resp] <- avg[,"estimate"]
             bias[v,,"bias",z,resp] <- avg[,"estimate"] - true
             bias[v,,"pctBias",z,resp] <- 100 * abs((avg[,"estimate"] - true) / true )
-            bias[v,,"covRate",z,resp] <- rowMeans(impDat[v,,,"2.5 %",] < true & true < impDat[v,,,"97.5 %",])
-            bias[v,,"avgWidth",z,resp] <- rowMeans(impDat[v,,,"97.5 %",] - impDat[v,,,"2.5 %",])
+            #bias[v,,"pctBias",z,resp] <- 100 * abs(rowMeans((impDat[v,,,"estimate",] - true) / true ))
+            bias[v,,"covRate",z,resp] <- rowMeans(impDat[v,,,"2.5 %",z,resp] < true & true < impDat[v,,,"97.5 %",z,resp])
+            bias[v,,"avgWidth",z,resp] <- rowMeans(impDat[v,,,"97.5 %",z,resp] - impDat[v,,,"2.5 %",z,resp])
             bias[v,,"RMSE",z,resp] <- sqrt((avg[,"estimate"] - true)^2)
+            #bias[v,,"RMSE",z,resp] <- 100 * sqrt((rowMeans(impDat[v,,,"estimate",]) - true) ^2 )
             bias[v,,"SD",z,resp] <- sdev[,"estimate"]
 
             #if(params$debug) cat(sprintf("\nbias values for %s and model %s %s:\n\n", v, resp, mods4sim[z]))
