@@ -11,7 +11,7 @@ library(data.table)
 suppressMessages(library(mice))
 suppressMessages(library(tidyverse))
 # look into tidytable for tidyverse syntax w/ data.table
-options(width=90)
+options(width=99)
 #if(params$deb|params$xdeb) func = "debug_imp_sim_func.R" else func = "imp_sim_functions.R"
 #source(func)
 #source("mice_functions.R")
@@ -41,13 +41,13 @@ params <- list(nrun=100,
 arg <- commandArgs(trailingOnly=TRUE)
 # Rscript isim.R win test r3 s613 m5 j1
 if(length(arg)==0){
-	cat("\n\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
-	cat("** NOTE ** no arguments provided - using default of windows = FALSE\n")
-	cat("/////////////////////////////////////////////////////////////////////////////////////////////\n\n")
-} else if(length(arg) > 0){
-  cat("\n\n/////////////////////")
-  cat("  arg =  ", paste(unlist(arg), collapse=" ; "))
-  cat("  ////////////////////////////////\n")
+    cat("\n\n/////////////////////////////////////////////////////////////////////////////////////////////\n")
+    cat("** NOTE ** no arguments provided - using default of windows = FALSE\n")
+    cat("/////////////////////////////////////////////////////////////////////////////////////////////\n\n")
+}else if(length(arg) > 0){
+    cat("\n\n/////////////////////")
+    cat("  arg =  ", paste(unlist(arg), collapse=" ; "))
+    cat("  ////////////////////////////////\n")
   for(a in arg){
 	  if(grepl("r\\d+$", a)) params$nrun  <- as.numeric(str_extract(a, "\\d+"))
 	  else if(a=="win") params$win        <- TRUE
@@ -78,10 +78,12 @@ invisible(lapply(s_files, function(x) source(x)))
 
 bprint <- function(x) print(rbind(head(x, 3), tail(x,3)))
 debugging <- FALSE # for uickly setting values when working in the file with the functions
-if(params$win) cat("\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n")
-if(params$win) cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M"))
-if(params$win) cat("\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n")
-if(params$win) params$hdir <- "C:/Users/sarah/Dropbox/Models/fate_glm/"
+if(params$win){
+    cat("\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n")
+    cat("\n>>>> date & time:", format(Sys.time(), "%d-%b %H:%M")) 
+    cat("\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n") 
+    params$hdir <- "C:/Users/sarah/Dropbox/Models/fate_glm/"
+}
 if(params$j > params$nrun) stop("j must be less than or equal to nrun!")
 # if(is.null(params$resp)) stop("no response variable specified!")
 if(params$test){
@@ -95,18 +97,18 @@ if(!dir.exists(now_dir)) dir.create(now_dir)
 
 seed_out <- FALSE
 if(is.null(params$seeds)){
-	seed_out <- TRUE
-	params$seeds <- c(71358, 102891, 82985, 61389, 11153)
-	last_seed <- as.numeric(grep(readLines("seed.flag"), params$seeds))
-	cat("last seed:", last_seed)
-	#new_order <- params$seeds + last_seed
-	new_order <- seq(1,length(params$seeds)) + last_seed
-	cat("new order:", new_order)
-	new_order[new_order > 5] = new_order[new_order > 5] - 5
-	cat("new order:", new_order)
-	params$seeds <- params$seeds[new_order]
-	cat("\n****************************************************************************")
-	cat("\n>>> using default seed list, in new order:", params$seeds, "\t")
+    seed_out <- TRUE
+    params$seeds <- c(71358, 102891, 82985, 61389, 11153)
+    last_seed <- as.numeric(grep(readLines("seed.flag"), params$seeds))
+    cat("last seed:", last_seed)
+#new_order <- params$seeds + last_seed
+    new_order <- seq(1,length(params$seeds)) + last_seed
+    cat("new order:", new_order)
+    new_order[new_order > 5] = new_order[new_order > 5] - 5
+    cat("new order:", new_order)
+    params$seeds <- params$seeds[new_order]
+    cat("\n****************************************************************************")
+    cat("\n>>> using default seed list, in new order:", params$seeds, "\t")
 }
 
 
@@ -126,13 +128,13 @@ mList <- readRDS('means.rds')
 cMat  <- readRDS('cormat.rds')
 fprob <- c( 'H'=0.53,'A'=0.1, 'D'=0.13,'F'=0.06, 'Hu'=0.13,'S'=0.06 )
 sprob <- c('CONI'=0.32, 'LETE'=0.68)
-nnest <- ifelse(params$test==T, 200, 150) # number of simulated nests
+nnest <- ifelse(params$test==T, 200, 200) # number of simulated nests
 mpatt  <- readRDS("misPatt.rds")
 awFile <- case_when(params$ampWt==1 ~ "ampWts.rds",
                     params$ampWt==2 ~ "ampWts2.rds",
                     params$ampWt==3 ~ "ampWts3.rds")
 ampwt <- readRDS(awFile)
-cat("\n<><><><><><><><><><> Missingness pattern & variable weights: <><><><><><><><><><><><><><><><><><><><>\n")
+cat("\n\n<><><><><><><><><><> Missingness pattern & variable weights: <><><><><><><><><><><><><><><><><><><><>\n")
 print(mpatt)
 print(ampwt)
 
@@ -158,8 +160,8 @@ if(params$xdeb) cat(" + EXTRA")
 cat("\n>> output will be saved every", params$j, "runs to dir:", now_dir,"\n\n")
 
 for (seed in params$seeds){
-    outf <- paste0(seed, "_loggedEvents.out")
-    if(params$test) outf <- paste0(seed,"_loggedEvents_TEST.out")
+    outf <- paste0(now_dir,sprintf("/%s_loggedEvents.out",seed ))
+    #if(params$test) outf <- paste0(now_dir,sprintf("/%s_loggedEvents-TEST.out",seed ))
     res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim), length(resp_list)))
     # dimnames(res) <- list(sort(as.character(vars)),
     dimnames(res) <- list(as.character(vars),# need to be in same order as vals
@@ -169,6 +171,10 @@ for (seed in params$seeds){
                           names(mods4sim),
                           resp_list
                           )
+    camFateVars <- vars[grepl(pattern="cam_fate", x=vars, fixed=TRUE)]
+    # keep a count of sample size for each category
+    varInfo <- array(NA, dim=c(length(camFateVars), params$nrun, length(mods4sim)))
+    dimnames(varInfo) <- list( camFateVars, seq(1,params$nrun), mods4sim)
 
 #cat("\n<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>\n")
     cat(sprintf(">>>>>>>>>>>>>> running simulation %s times \t>>> seed = %s ", params$nrun, seed))
@@ -179,21 +185,27 @@ for (seed in params$seeds){
         cat("\n\n::::::::::::::::::: MODEL", mods4sim[mod], ":::::::::::::::::::::::::::::::\n\n") ## *~*~*~*~*
         beta_list <- betas[[mod]]
         form_list <- formulas[[names(mods4sim)[mod]]]
-        #cat("\n>> formula list, beta list:") ## *~*~*~*~*
-        #print(names(form_list))
-        #print(str(beta_list))
+        cat("\n>> formula list, beta list:") ## *~*~*~*~*
+        print(names(form_list))
+        print(str(beta_list))
         for(run in 1:params$nrun){
             cat(run)
             # repeat this until you get a dataset w/o missing levels??
             #dat4sim <- mkSim(resp_list, mods4sim[mod], nnest, cMat, mList, beta_list, fprob, sprob, prList, debug=params$deb)
-            dat4sim <- mkResp(resp_list, mods4sim[mod], nnest, cMat, mList, beta_list, fprob, sprob, prList, debug=params$deb)
+            dat4sim <- mkResp(seed=run+seed,resp_list, mods4sim[mod], nnest, cMat, mList, beta_list, fprob, sprob, prList, debug=params$deb)
             datNA <- mkSimDat( seeed = run+seed, nd = dat4sim, mpatt=mpatt, wts=ampwt, xdebug=params$xdeb, debug = params$deb, convFact = TRUE)
-            # if(params$deb) cat("\n*** datNA:\n")
+            #if(params$deb) cat("\n*** datNA:\n")
             #if(params$deb) cat("\n<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>\n")
-            if(params$deb) cat("\n\n<><><><><><><><><><<><><><><<><><><><> AMPUTED DATA: <><><><><><><><><><<><><><><<><><><><>>> ")
-            if(params$deb) qvcalc::indentPrint(str(datNA$amp), indent=8)
-            if(params$deb) qvcalc::indentPrint(colSums(is.na(datNA$amp)), indent=8)
+            #if(params$deb) cat("\n\n<><><><><><><><><><<><><><><<><><><><> AMPUTED DATA: <><><><><><><><><><<><><><><<><><><><>>>\n ")
+            #if(params$deb) qvcalc::indentPrint(str(datNA$amp), indent=8)
+            #if(params$deb) qvcalc::indentPrint(colSums(is.na(datNA$amp)), indent=8)
             datNA <- datNA$amp
+            #if(params$deb) qvcalc::indentPrint(str(datNA), indent=8)
+            #if(params$debug) cat("\n>> cam fate vars for this run:")
+            #cat("created simulated nest data")
+            #if(params$debug) qvcalc::indentPrint(datNA$cam_fate, indent=8)
+            #if(params$deb) cat("\n>> cam fate vars for this run:")
+            #if(params$deb) qvcalc::indentPrint(table(datNA$cam_fate), indent=8)
             
             for(x in seq_along(mets)){ # does matching by index help the trycatch statement?
                 skiptoNext <- FALSE
@@ -232,27 +244,40 @@ for (seed in params$seeds){
                 res[, mets[x], run,,mod,]  <- vals
             }
             
-        if(params$test) cat(sprintf("\n\n::::::::::::::::::::::::::::::: ALL OUTPUT - RUN %s, MODEL %s:::::::::::::::::::::::::::::::\n\n",run,mod ))## *~*~*~*~*
-        if(params$test) qvcalc::indentPrint(res[,, run,,mod,])
-            if(run %% params$j == 0){
-                    begn <- run-params$j
-                    endd <- run-0
-                    #cat("\n>>> creating directory:", now_dir, "exists?", exists(now_dir))
-                    nowtime <- format(Sys.time(), "%H_%M")
-                    # fname <- paste0(now_dir,sprintf("runs%sto%s_%s_seed%s_%s.rds", begn, endd, params$resp, seed, nowtime))
-                    fname <- paste0(now_dir,sprintf("/runs%sto%s_mod%s_seed%s_%s_%s.rds", begn, endd,mod, seed, nowtime, suffix))
-                    saveRDS(res[,,begn:endd,,,], fname)
-                    cat(sprintf("\n>>>>>> %s - saved runs %s to %s to file: %s\n\n",nowtime, begn, endd, fname))
-            }
+            if(params$test) cat(sprintf("\n\n::::::::::::::::::::::::::::::: ALL OUTPUT - RUN %s, MODEL %s:::::::::::::::::::::::::::::::\n\n",run,mod ))## *~*~*~*~*
+            if(params$test) qvcalc::indentPrint(res[,, run,,mod,])
+            #if(run %% params$j == 0){
+                    #begn <- run-params$j
+                    #endd <- run-0
+                    ##cat("\n>>> creating directory:", now_dir, "exists?", exists(now_dir))
+                    #nowtime <- format(Sys.time(), "%H_%M")
+                    ## fname <- paste0(now_dir,sprintf("runs%sto%s_%s_seed%s_%s.rds", begn, endd, params$resp, seed, nowtime))
+                    #fname <- paste0(now_dir,sprintf("/runs%sto%s_mod%s_seed%s_%s_%s.rds", begn, endd,mod, seed, nowtime, suffix))
+                    #saveRDS(res[,,begn:endd,,,], fname)
+                    #cat(sprintf("\n>>>>>> %s - saved runs %s to %s to file: %s\n\n",nowtime, begn, endd, fname))
+            #}
+            #varInfo <- array(NA, dim=c(length(camFateVars), params$nrun, length(mods4sim), length(resp_list)))
+            #if(params$deb) cat("\n>> cam fate vars for this run:", table(datNA$cam_fate))
+            #if(params$deb) cat("\n>> species for this run:", table(datNA$speciesCONI))
+            #if(params$deb) cat("\n>> add to matrix:", varInfo[,run,mod]) 
+            varInfo[,run,mod] <- table(datNA$cam_fate)[-1]
+            #if(params$deb) cat("\n>> in matrix:", varInfo[,run,mod])
         }
 	if (seed_out){
             writeLines(as.character(seed), "seed.flag")
             cat("\n>> wrote seed value to file\n")
 	}
+        #if(params$test) cat("\n >> cam fate vars for this model:")
+        if(params$test) qvcalc::indentPrint(varInfo[,,mod])
         nowtime <- format(Sys.time(), "%H_%M")
         fname <- paste0(now_dir, sprintf("/vals_mod%s_seed%s_%s_%s.rds", mod, seed, nowtime, suffix))
-        cat("\n ~ ~ ~ saving to file:", fname)
+        cat("\n ~ ~ ~ saving output to file:", fname)
         saveRDS(res, fname)
+
+        fnameV <- paste0(now_dir, sprintf("/camFate_mod%s_seed%s_%s_%s.rds", mod, seed, nowtime, suffix ))
+        cat("\n ~ ~ ~ saving cam fate vars to file:", fnameV)
+        saveRDS(varInfo, fnameV)
+
     }
 }
 
@@ -297,49 +322,51 @@ for (seed in params$seeds){
 #     
 #   }
 # }
-if(FALSE){
-    for(resp in resp_list){
-      col_list<- c(prVars,resp )# columns to select, as strings
-      form_list <- formulas[[resp]]
-      filename <- sprintf("out/prvis_%s.out", resp)
-      prv<- profvis::profvis(
-        runSim(fullDat=dat4sim, 
-               col_sel=col_list,
-               mLists=metLists,
-               forms=form_list,
-               resp=resp,
-               vars=var_list,
-               mods=mods4sim,
-               par=params
-               ),
-        prof_output = filename
-        )
-      htmlwidgets::saveWidget(prv, sprintf("profile_%s.html", resp))
-    }
-}
+#if(FALSE){
+    #for(resp in resp_list){
+    #  col_list<- c(prVars,resp )# columns to select, as strings
+    #  form_list <- formulas[[resp]]
+    #  filename <- sprintf("out/prvis_%s.out", resp)
+    #  prv<- profvis::profvis(
+    #    runSim(fullDat=dat4sim, 
+    #           col_sel=col_list,
+    #           mLists=metLists,
+    #           forms=form_list,
+    #           resp=resp,
+    #           vars=var_list,
+    #           mods=mods4sim,
+    #           par=params
+    #           ),
+    #    prof_output = filename
+    #    )
+    #  htmlwidgets::saveWidget(prv, sprintf("profile_%s.html", resp))
+    #}
+#}
 
-if(FALSE){
-resp_list <- c("is_u", "HF_mis")
-    for(resp in resp_list){
-      col_list<- c(prVars,resp )# columns to select, as strings
-      form_list <- formulas[[resp]]
-      filename <- sprintf("out/prvis_%s.out", resp)
-      aDat <- mkSimDat(seeed=13, nd=dat4sim, vars=vars, convFact=TRUE)$amp
-      for(met in mets){
-        prv<- profvis::profvis(
-          mkImpSim(fullDat=dat4sim,
-                   ampDat=aDat,
-                   cols=col_list,
-                   resp=resp,
-                   mods=mods4sim,
-                   vars=vars,
-                   met=met,
-                   form_list=form_list
-                   
-                   ),
-          prof_output = filename
-          )
-        htmlwidgets::saveWidget(prv, sprintf("prof/profile2_%s_%s.html", resp, met))
-      }
-    }
-}
+#if(FALSE){
+#resp_list <- c("is_u", "HF_mis")
+#    for(resp in resp_list){
+#      col_list<- c(prVars,resp )# columns to select, as strings
+#      form_list <- formulas[[resp]]
+#      filename <- sprintf("out/prvis_%s.out", resp)
+#      aDat <- mkSimDat(seeed=13, nd=dat4sim, vars=vars, convFact=TRUE)$amp
+#      for(met in mets){
+#        prv<- profvis::profvis(
+#          mkImpSim(fullDat=dat4sim,
+#                   ampDat=aDat,
+#                   cols=col_list,
+#                   resp=resp,
+#                   mods=mods4sim,
+#                   vars=vars,
+#                   met=met,
+#                   form_list=form_list
+#                   
+#                   ),
+#          prof_output = filename
+#          )
+#        htmlwidgets::saveWidget(prv, sprintf("prof/profile2_%s_%s.html", resp, met))
+#      }
+#    }
+#
+#}
+#
