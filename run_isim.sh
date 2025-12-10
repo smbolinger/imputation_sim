@@ -23,7 +23,7 @@ if [ "$2" = "test" ]; then
         ampWt=3
         suff="aw$ampWt"
         nImp=5
-        nRun=3
+        nRun=10
         nSave=1
         #ampWt=1
 	#echo ">>> running as test; appending output to $TEST"
@@ -40,7 +40,7 @@ else
         suff="aw$ampWt"
         nImp=25
         nRun=250
-        nSave=50
+        nSave=100
         testOn=""
 	echo -e "\n>>> seed=$1, $nImp imputations, $nRun reps; output appended to $OUT"
         if [ "$2" = "debug" ]; then
