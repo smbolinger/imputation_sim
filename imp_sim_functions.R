@@ -120,7 +120,7 @@ mkSimDat <- function(seeed, nd, mpatt, wts, new_prop=0.2, patt_freq=c(0.45,0.45,
   #cat("mkSimDat seed=", seeed, class(seeed))
   # if(method=="amp"){
     dat4amp <- add_dummy(nd, debug=debug)
-    set.seed(seed=seeed)
+    #set.seed(seed=seeed)
     # no_miss <- c("obs_int", "fdate", "is_u", "speciesLETE", "speciesCONI")
     no_miss <- c("obs_int", "fdate", "is_u", "speciesCONI")
     is_miss <- colnames(mpatt)[!colnames(mpatt) %in% no_miss]
@@ -340,9 +340,10 @@ visImp <- function(imp){
 
 #mkResp <- function(sDat, betas, form, debug=FALSE, xdebug=FALSE){
 #mkResp <- function(resp_list, mod, s_size, cMat, mList, betas,  debug=FALSE, xdebug=FALSE){
-mkResp <- function(resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE, xdebug=FALSE){
+mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE, xdebug=FALSE){
     #dummySim <- as.data.table(model.matrix(form, data = sDat))
     #tryCatch(
+    set.seed(seed=seed)
     success <- FALSE
     while(!success){
         sDat <- mkSim(s_size, cMat, mList, betas, fprob, sprob, debug=debug, xdebug=xdebug)
