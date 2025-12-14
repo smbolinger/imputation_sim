@@ -19,7 +19,17 @@ fit_models <- function(
       as.formula(
         # paste0(
         paste(
-          # resp, modlist
+
+          resp, modlist[m], sep=" "
+      )  ),
+        data=dataMod,
+        family=fam,
+        method=brglm2::brglm_fit,
+        # control=brglmControl(maxit=1000)
+        control=brglmControl(maxit=iter)
+
+      )} 
+    # resp, modlist
           # this is pasting resp in front of each value of modlist
           # then somehow the list of mod calls comes out OK on the other end
           # but it messes up the modnames() function
@@ -29,15 +39,6 @@ fit_models <- function(
           # I guess it just took the first legitimate formula in the vector
           # even though it was fed the entire vector each time...
           # see "nest_models/mod_calls_bad.png" for examples
-          resp, modlist[m], sep=" "
-      )  ),
-        data=dataMod,
-        family=fam,
-        method=brglm2::brglm_fit,
-        # control=brglmControl(maxit=1000)
-        control=brglmControl(maxit=iter)
-
-      )}
   }else if(met=="jeffreys"){
     cat("using Jeffreys's prior")
     for(m in seq_along(modlist)){
