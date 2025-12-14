@@ -35,7 +35,8 @@ names(mods4sim) <- c("m1", "m8", "m16")
 cat("\n>> models:\n")
 print(mods4sim)
 
-patt <- "100runs|250runs"
+#patt <- "100runs|250runs"
+patt <- "vals"
 #fnlist <- list.files(path = paste0(params$hdir, params$dir_ext), pattern = "^runs0to50.*|^runs50to100.*", full.names =T)
 fnlist <- list.files(path = paste0(params$hdir, params$dir_ext), pattern = patt, full.names =T)
 #if(params$debug) cat("\n\t>> filename list:")
@@ -95,6 +96,8 @@ for(z in seq_along(mods4sim)){
     cat("\n\n>> files for this model:\n", mods==mod)
     cat("\n\n>> files for this model:\n", length(flist[mods==mod]), "\n")
     if(length(flist[mods==mod])<1) stop(sprintf("No files matching model %s. Exiting script.", mod))
+    qvcalc::indentPrint(flist[mods==mod])
+    cat("\n>>> attempt to merge:\n")
     impDat <- abind::abind(flist[mods==mod], along=3)
     ## double bracket doesn't work'
     #impDat <- abind::abind(flist[[mods==mod]], along=3)

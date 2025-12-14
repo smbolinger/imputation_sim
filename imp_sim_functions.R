@@ -343,10 +343,11 @@ visImp <- function(imp){
 mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE, xdebug=FALSE){
     #dummySim <- as.data.table(model.matrix(form, data = sDat))
     #tryCatch(
+    
     set.seed(seed=seed)
     success <- FALSE
     while(!success){
-        sDat <- mkSim(s_size, cMat, mList, betas, fprob, sprob, debug=debug, xdebug=xdebug)
+        sDat <- mkSim(s_size, cMat, mList, betas, fprob, sprob,debug=debug, xdebug=xdebug)
         form <- as.formula(mod)
         dummySim <- model.matrix(form, data = sDat)
         #success <- dim(dummySim)[2]==dim(betas)[1]
@@ -390,7 +391,7 @@ respMatMul <- function( dummySim, betas, debug=FALSE){
     return(y)
 }
 
-mkSim <- function(  s_size, cMat, mList, betas,fprob, sprob,  debug=FALSE, xdebug=FALSE){
+mkSim <- function( s_size, cMat, mList, betas,fprob, sprob, stratify=TRUE, debug=FALSE, xdebug=FALSE){
     fates <- names(fprob)
     spp   <- names(sprob)
     #if(debug) cat("\nfates:", fates, "& species:", spp) # ~*~*~*
@@ -399,18 +400,25 @@ mkSim <- function(  s_size, cMat, mList, betas,fprob, sprob,  debug=FALSE, xdebu
     #     print(betas)
     # }
     simDat <- list()
-    for (s in seq_along(spp)){
-        sp <- spp[s]
-        # cat("\n>>> species:", sp, "\t& means:", mList[[sp]], "\t& correlation matrix:\n") # ~*~*~*
-        # print(cMat[[sp]])
-        simDat[[sp]] <- as.data.table(MASS::mvrnorm(n=round(s_size*sprob[s]), mu=mList[[sp]], Sigma=cMat[[sp]]))
-        # cat("\n>> adding camera fates\n") # ~*~*~*
-        simDat[[sp]][,cam_fate := sample(fates, size=nrow(simDat[[sp]]), replace=T, prob=fprob)]
+    if(stratify){
+        for (s in seq_along(spp)){
+            sp <- spp[s]
+            # cat("\n>>> species:", sp, "\t& means:", mList[[sp]], "\t& correlation matrix:\n") # ~*~*~*
+            # print(cMat[[sp]])
+            simDat[[sp]] <- as.data.table(MASS::mvrnorm(n=round(s_size*sprob[s]), mu=mList[[sp]], Sigma=cMat[[sp]]))
+            # cat("\n>> adding camera fates\n") # ~*~*~*
+            simDat[[sp]][,cam_fate := sample(fates, size=nrow(simDat[[sp]]), replace=T, prob=fprob)]
+        }
+        #cat("\n>>> created sim data") # ~*~*~*
+        names(simDat) <- c("CONI", "LETE")
+        sDat <- data.table::rbindlist(simDat, idcol="species", use.names=T, fill=T)
+        #cat(" - merged sim data for the two species") # ~*~*~*
     }
-    #cat("\n>>> created sim data") # ~*~*~*
-    names(simDat) <- c("CONI", "LETE")
-    sDat <- data.table::rbindlist(simDat, idcol="species", use.names=T, fill=T)
-    #cat(" - merged sim data for the two species") # ~*~*~*
+    else {
+        sDat <- as.data.table(MASS::mvrnorm(n=s_size, mu=mList, Sigma=cMat))
+        sDat[,species := sample(spp, size=nrow(sDat), replace=T, prob=sprob)]
+        sDat[,cam_fate := sample(fates, size=nrow(sDat), replace=T, prob=fprob)]
+    }
     sDat[,cam_fate := relevel(as.factor(sDat[,cam_fate]), ref="H")]
     sDat[,species  := relevel(as.factor(sDat[,species] ), ref="LETE")]
     return(sDat)

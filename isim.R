@@ -1,5 +1,4 @@
 
-
   # col_sel <- c(prVars,r) # columns to select, as strings
 # source("fateGLM_impsim.R")
 
@@ -192,7 +191,8 @@ for (seed in params$seeds){
             cat(run)
             # repeat this until you get a dataset w/o missing levels??
             #dat4sim <- mkSim(resp_list, mods4sim[mod], nnest, cMat, mList, beta_list, fprob, sprob, prList, debug=params$deb)
-            dat4sim <- mkResp(seed=run+seed,resp_list, mods4sim[mod], nnest, cMat, mList, beta_list, fprob, sprob, prList, debug=params$deb)
+            dat4sim <- mkResp(seed=run+seed,resp_list, mods4sim[mod], nnest, cMat, mList, beta_list, fprob, sprob, prList,  debug=params$deb)
+            dat4sim <- dat4sim[[1]] # comment out except when debugging - mkResp returns list(sDat, fitSim1, fitSim2)
             datNA <- mkSimDat( seeed = run+seed, nd = dat4sim, mpatt=mpatt, wts=ampwt, xdebug=params$xdeb, debug = params$deb, convFact = TRUE)
             #if(params$deb) cat("\n*** datNA:\n")
             #if(params$deb) cat("\n<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>\n")
