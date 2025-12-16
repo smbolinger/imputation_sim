@@ -3,7 +3,7 @@
 
 if [ $# -eq 0 ]; then
     echo ">> No arguments provided!"
-    echo ">> Usage: $0 - [seed] [test (optional)] [debug (optional)]"
+    echo ">> Usage: $0 - [seed] [test (optional)] [verbosity level 1-3(optional)]"
     exit 1
 else
     echo "argument(s) passed: $1 $2 $3"
@@ -18,21 +18,23 @@ FILE="/home/wodehouse/Projects/fate_glm/isim.R"
 #OUT="${1}${2}.out" # brackets (string concatenation) to prevent '.out' being interpreted as part of var name
 #TEST=5 
 if [ "$2" = "test" ]; then 
-	OUT="test-${1}.out"
-        testOn="test"
-        ampWt=3
-        suff="aw$ampWt"
-        nImp=5
-        nRun=3
-        nSave=1
-        #ampWt=1
-	#echo ">>> running as test; appending output to $TEST"
-	echo -e "\n>>> running as test; seed=$1, $nImp imputations, $nRun reps; appending output to $OUT"
-        if [ "$3" = "debug" ]; then
-            deb=2
-        else
-            deb=1
-        fi
+    OUT="test-${1}.out"
+    testOn="test"
+    ampWt=3
+    suff="aw$ampWt"
+    nImp=5
+    nRun=16
+    nSave=1
+    #ampWt=1
+    #echo ">>> running as test; appending output to $TEST"
+    echo -e "\n>>> running as test; seed=$1, $nImp imputations, $nRun reps; appending output to $OUT"
+    if [ "$3" = "v2" ]; then
+        deb=2
+    elif [ "$3" = "v3" ]; then
+        deb=3
+    else
+        deb=1
+    fi
 else
 	#echo "running with $1 as name: $IMP imputations, $REP reps; output to $OUT"
         OUT="${1}.out" # brackets (string concatenation) to prevent '.out' being interpreted as part of var name
@@ -43,7 +45,7 @@ else
         nSave=100
         testOn=""
 	echo -e "\n>>> seed=$1, $nImp imputations, $nRun reps; output appended to $OUT"
-        if [ "$2" = "debug" ]; then
+        if [ "$2" = "v1" ]; then
             deb=1
         else
             deb=0
@@ -53,14 +55,16 @@ fi
 #nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "m5" "r3" "j1" "deb" "xdeb" "test" &
 # most of these args get handled in the isim.R script - not sure if that's better or worse than here:
 #if [ "$deb"==1 ]; then
-if [ "$deb" -eq 1 ]; then
-    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "deb" "$testOn"&
-elif [ "$deb" -eq 2 ]; then
-    #echo -e "extra debug!\n"
-    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "deb" "xdeb" "$testOn"&
-else
-    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "$testOn"&
-fi
+#if [ "$deb" -eq 1 ]; then
+#    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "$testOn"&
+#elif [ "$deb" -eq 2 ]; then
+#    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "v$deb" "$testOn"&
+#elif [ "$deb" -eq 3 ]; then
+#    #echo -e "extra debug!\n"
+#    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "v$deb" "xdeb" "$testOn"&
+#else
+nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "v$deb" "$testOn"&
+#fi
 
 echo -e "\n\n\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n" >> "$OUT"  
 echo -e "\tDATE: $DATE \t\tTIME: $NOW \t\tPID: $! \n" >> "$OUT"
@@ -68,7 +72,7 @@ echo -e "\tFILE: $FILE\n" >> "$OUT"
 echo -e "[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n\n" >> "$OUT"  
 
 echo -e "\n\t>>> PID: $! " # -e allows \n to be interpreted as newline
-echo -e "\t>>>>>> *DEBUG LEVEL*: $deb\n"
+echo -e "\t>>>>>> *VERBOSITY LEVEL*: $deb\n"
 # use flag file if you want something to run only once per day (like printing DATE)
 #echo "$DATE" > isim_flag.out
 #if [ "$1"="HF_mis" ]; then
