@@ -139,7 +139,8 @@ for(z in seq_along(mods4sim)){
             #if(params$debug) print(impDat[v,,,,z,resp])
             #if(params$debug) print(str(impDat))
             #if
-            impDat[v,"cc",,,z,resp] <- exp(impDat[v,"cc",,,z,resp]) 
+            # now I'm doing this in the other script (debug_whatever.R)
+            #impDat[v,"cc",,,z,resp] <- exp(impDat[v,"cc",,,z,resp]) 
             if(params$debug) print(str(impDat[v,,,,z,resp]))
             avg <- apply(impDat[v, , , ,z,resp],MARGIN=c(1,3),FUN = mean, na.rm=TRUE)
             sdev <- apply(impDat[v, , , ,z,resp],MARGIN=c(1,3),FUN = sd, na.rm=TRUE)
