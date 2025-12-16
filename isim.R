@@ -96,11 +96,18 @@ if(is.null(params$seeds)){
     cat("\n****************************************************************************")
     cat("\n>>> using default seed list, in new order:", params$seeds, "\t")
 }
+#########################################################################################
 modList <- readLines("modList.txt")
 mods4sim <- modList[c(1,8,16) ]
 names(mods4sim) <- c("m1", "m8", "m16")
 formulas <- readRDS("form_lists.rds")
 metLists <- readRDS("met_lists.rds")
+#########################################################################################
+trueDat <- readRDS("dat_complete.rds")
+#trueDat <- read.csv("dat_complete.csv")
+trueDat$cam_fate <- relevel(as.factor(trueDat$cam_fate), ref="H")
+trueDat$species <- relevel(as.factor(trueDat$species), ref="LETE")
+if(params$vbose>=3) cat("\n\treleveled trueDat")
 ####### imports for making sim data: #######################################################
 if(TRUE){
     betas <- readRDS("betas.rds") # this is a list of vectors or something
@@ -137,14 +144,18 @@ cat("\n>> output will be saved every", params$j, "runs to dir:", now_dir,"\n\n")
 
 for (seed in params$seeds){
     outf <- paste0(now_dir,sprintf("/%s_loggedEvents.out",seed ))
-    res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim), length(resp_list)))
+    #res <- array(NA, dim = c(length(vars), length(mets), params$nrun, 3, length(mods4sim), length(resp_list)))
+    # add true and sim coef vals:
+    res <- array(NA, dim = c(length(vars), length(mets)+2, params$nrun, 3, length(mods4sim), length(resp_list)))
     dimnames(res) <- list(as.character(vars),# need to be in same order as vals
-                          as.character(mets),
+                          c(mets, "sim", "true"),
                           as.character(1:params$nrun),
                           c("estimate", "2.5 %","97.5 %"),
                           names(mods4sim),
                           resp_list
                           )
+    #cat("\n >> empty matrix to fill:")
+    #print(res)
     camFateVars <- vars[grepl(pattern="cam_fate", x=vars, fixed=TRUE)]
     varInfo <- array(NA, dim=c(length(camFateVars), params$nrun, length(mods4sim))) # keep a count of sample size for each category
     dimnames(varInfo) <- list( camFateVars, seq(1,params$nrun), mods4sim)
@@ -157,18 +168,9 @@ for (seed in params$seeds){
         form_list <- formulas[[names(mods4sim)[mod]]]
         for(run in 1:params$nrun){
             cat(run)
-            # repeat this until you get a dataset w/o missing levels??
-            #dat4sim <- mkSim(resp_list, mods4sim[mod], nnest, cMat, mList, beta_list, fprob, sprob, prList, debug=params$deb)
-            #dat4sim <- mkResp(seed=run+seed,resp_list, mods4sim[mod], nnest, cMat, mList, beta_list, fprob, sprob, prList,  debug=params$deb, mindebug=params$mdeb)
             dat4sim <- mkResp(seed=run+seed,resp_list, mods4sim[mod], nnest, cMat, mList, beta_list, fprob, sprob, prList, vbose=params$vbose)
             #dat4sim <- dat4sim[[1]] # comment out except when debugging - mkResp returns list(sDat, fitSim1, fitSim2)
-            #datNA <- mkSimDat( seeed = run+seed, nd = dat4sim, mpatt=mpatt, wts=ampwt, xdebug=params$xdeb, debug = params$deb, convFact = TRUE, mindebug=params$mdeb)
-            datNA <- mkSimDat( seeed = run+seed, nd = dat4sim, mpatt=mpatt, wts=ampwt,convFact = TRUE, vbose=params$vbose)
-            #if(params$deb) cat("\n*** datNA:\n")
-            #if(params$deb) cat("\n<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>\n")
-            #if(params$deb) cat("\n\n<><><><><><><><><><<><><><><<><><><><> AMPUTED DATA: <><><><><><><><><><<><><><><<><><><><>>>\n ")
-            #if(params$deb) qvcalc::indentPrint(str(datNA$amp), indent=16)
-            #if(params$deb) qvcalc::indentPrint(colSums(is.na(datNA$amp)), indent=8)
+            datNA <- mkSimDat( seeed = run+seed, nd = dat4sim, mpatt=mpatt, wts=ampwt,convFact = TRUE, vbose=params$vbose) #if(params$deb) cat("\n*** datNA:\n")
             datNA <- datNA$amp
             for(x in seq_along(mets)){ # does matching by index help the trycatch statement?
                 skiptoNext <- FALSE
@@ -207,64 +209,70 @@ for (seed in params$seeds){
                 if(skiptoNext) next
                 res[, mets[x], run,,mod,]  <- vals
             }
+
             
-            #impDat[v,"cc",,,z,resp] <- exp(impDat[v,"cc",,,z,resp]) 
-            #cat("\nbefore exp:\n")
-            #print(res[,"cc",run,,z,])
-            #res[,"cc",run,,z,] <- exp(res[,"cc",run,,z,]) 
-            #cat("\nafter exp:\n")
-            #print(res[,"cc",run,,z,])
-            if(params$test) cat(sprintf("\n\n::::::::::::::::::::::::::::::: ALL OUTPUT - RUN %s, MODEL %s:::::::::::::::::::::::::::::::\n\n",run,mod ))## *~*~*~*~*
-            if(params$test) qvcalc::indentPrint(res[,, run,,mod,])
-            if(params$test){
-                regMet <- brglm2::brglmFit
-                iter <- 500
+            #if(params$test){
+            if(TRUE){
                 coefFull <- list()
-                #cat("\n\timporting true & sim values")
                 coefTrue <- list()
-                #mvars <- c()
                 for(r in seq_along(resp_list)){
+                    if(params$vbose >=2) cat("\n\n    <><><><><><><><><> TRUE / SIM COEFS <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>\n\n")
                     resp <- resp_list[r]
-                    #fitFull <- glm(as.formula(paste(resp, mods4sim[mod])), data=fullDat, family=binomial, method=regMet, control=brglmControl(maxit=iter))
-                    fitFull <- glm(as.formula(paste(resp, mods4sim[mod])), data=dat4sim, family=binomial, method=regMet, control=brglmControl(maxit=iter))
+                    fitTrue <- glm(as.formula(paste(resp,mods4sim[mod])),
+                                   data=trueDat,
+                                   family=binomial,
+                                   method=brglm2::brglmFit,
+                                   control=brglmControl(maxit=500))
+                    fitFull <- glm(as.formula(paste(resp, mods4sim[mod])),
+                                   data=dat4sim,
+                                   family=binomial,
+                                   method= brglm2::brglmFit,
+                                   control=brglmControl(maxit=500))
                     if(params$vbose>=3) cat("\n\t get sim coef values (exponentiated)")
-                    #coefFull[[r]] <- coef(fitFull)[-1]
-                    coefFull[[r]] <- exp(coef(fitFull))[-1]
-                    trueDat <- readRDS("dat_complete.rds")
-                    #trueDat <- read.csv("dat_complete.csv")
-                    trueDat$cam_fate <- relevel(as.factor(trueDat$cam_fate), ref="H")
-                    trueDat$species <- relevel(as.factor(trueDat$species), ref="LETE")
-                    if(params$vbose>=3) cat("\n\treleveled trueDat")
-                    fitTrue <- glm(as.formula(paste(resp,mods4sim[mod])), data=trueDat, family=binomial, method=regMet, control=brglmControl(maxit=iter))
+                    #coefFull[[r]] <- exp(coef(fitFull))[-1]
+                    coefFull[[resp]] <- cbind(exp(coef(fitFull))[-1], exp(confint(fitFull))[-1,])
+                    #vals <- cbind(coef(fit)[-1], confint(fit)[-1,]) # confint has 2 columns, so need comma
                     if(params$vbose>=3) cat("\n\t get true coef values (exponentiated)")
-                    coefTrue[[r]] <- exp(coef(fitTrue))[-1]
+                    coefTrue[[resp]] <- cbind(exp(coef(fitTrue))[-1], exp(confint(fitTrue))[-1,])
                     }
-                cat(sprintf("\n\n::::::::::::::::::::::::::::::: MICE OUTPUT COMPARED TO TRUE/SIM COEFS :::::::::::::::::::::::::::::::\n\n",run,mod ))## *~*~*~*~*
+                if(params$vbose >=3) cat("\n    >> print sim/true coef vals with CIs:\n")
+                if(params$vbose >=3) qvcalc::indentPrint(coefFull, indent=16)
+                if(params$vbose >=3) qvcalc::indentPrint(coefTrue, indent=16)
+                #cat(sprintf("\n\n::::::::::::::::::::::::::::::: MICE OUTPUT COMPARED TO TRUE/SIM COEFS :::::::::::::::::::::::::::::::\n\n",run,mod ))## *~*~*~*~*
                # qvcalc::indentPrint(res[,, run,,mod,])
                 mvars <- names(coefTrue[[1]])
-                coef1 <- cbind(coefTrue[[1]], coefFull[[1]])
+                #coef1 <- rbind(coefFull[[1]], coefTrue[[1]])
+                #coef1 <- array()
+                #cat("\ncoef1:")
+                #print(coef1)
                 #out2 <- cbind(coefTrue[[2]][,1], coefFull[[2]][,1], ret[,1,2])
                 # this one doesn't have the CIs anyway
                 #coef2 <- cbind(coefTrue[[2]], coefFull[[2]])
-                coef2 <- cbind(coefFull[[2]], coefTrue[[2]])
-                colnames(coef1) <- c("sim", "true")
-                colnames(coef2) <- c("sim", "true")
-                if(params$vbose >=3) cat("\n\tcheck match:\n")
-                if(params$vbose >=3) print(coefTrue[[1]])
+                #coef2 <- rbind(coefFull[[2]], coefTrue[[2]])
+                #colnames(coef1) <- c("sim", "true")
+                #colnames(coef2) <- c("sim", "true")
+                if(params$vbose >=3) cat("\n\tcheck match for is_u & true:\n")
+                if(params$vbose >=3) qvcalc::indentPrint(coefTrue[[1]][mvars,], indent=8)
                 ##print(coef1[mvars,])
-                if(params$vbose >=3) print(coef1)
+                #if(params$vbose >=3) print(coef1)
                 #print(res[mvars,,run,1,mod,1])
-                if(params$vbose >=3) print(res[,,run,1,mod,1])
+                if(params$vbose >=3) qvcalc::indentPrint(res[mvars,"true",run,1,mod,1], indent=8)
                 #out1 <- sapply(res)
                 # vars should be in same order:
                 # make sur the vars are in th same order:
-                out1 <- cbind(res[mvars,,run,1,mod,1], coef1[mvars,]) # 1=estimate, 1=is_u
-                out2 <- cbind(res[mvars,,run,1,mod,2], coef2[mvars,]) # 1=estimate, 2=HF_mis
-                cat("\n\tMICE output compared to true and sim values:\n")
-                cat("\n")
-                qvcalc::indentPrint(out1, indent=8)
-                cat("\n")
-                qvcalc::indentPrint(out2, indent=8)
+                #out1 <- cbind(res[mvars,,run,1,mod,1], coef1[mvars,]) # 1=estimate, 1=is_u
+                #out2 <- cbind(res[mvars,,run,1,mod,2], coef2[mvars,]) # 1=estimate, 2=HF_mis
+                #cat("\n    >> MICE output compared to true and sim values:\n")
+                #cat("\n")
+                #qvcalc::indentPrint(out1, indent=8)
+                #cat("\n")
+                #qvcalc::indentPrint(out2, indent=8)
+            
+                #allCoef <- 
+                res[mvars,"sim",run,,mod,"is_u"] <-  coefFull[[1]][mvars,]
+                res[mvars,"sim",run,,mod,"HF_mis"] <-  coefFull[[2]][mvars,]
+                res[mvars,"true",run,,mod,"is_u"] <-  coefTrue[[1]][mvars,]
+                res[mvars,"true",run,,mod,"HF_mis"] <-  coefTrue[[2]][mvars,]
             }
             #if(run %% params$j == 0){
                     #begn <- run-params$j
@@ -277,7 +285,10 @@ for (seed in params$seeds){
                     #cat(sprintf("\n>>>>>> %s - saved runs %s to %s to file: %s\n\n",nowtime, begn, endd, fname))
             #}
             #varInfo <- array(NA, dim=c(length(camFateVars), params$nrun, length(mods4sim), length(resp_list)))
-            #if(params$deb) cat("\n>> cam fate vars for this run:", table(datNA$cam_fate))
+            if(params$test) cat(sprintf("\n\n::::::::::::::::::::::::::::::: ALL OUTPUT - RUN %s, MODEL %s:::::::::::::::::::::::::::::::\n\n",run,mod ))## *~*~*~*~*
+            if(params$test) qvcalc::indentPrint(res[,, run,,mod,])
+            if(params$vbose>=1) cat("\n    >> cam fate vars for this run:\n")
+            if(params$vbose>=1) qvcalc::indentPrint(table(datNA$cam_fate), indent=8)
             #if(params$deb) cat("\n>> species for this run:", table(datNA$speciesCONI))
             #if(params$deb) cat("\n>> add to matrix:", varInfo[,run,mod]) 
             varInfo[,run,mod] <- table(datNA$cam_fate)[-1]
@@ -287,7 +298,7 @@ for (seed in params$seeds){
             writeLines(as.character(seed), "seed.flag")
             cat("\n>> wrote seed value to file\n")
 	}
-        #if(params$test) cat("\n >> cam fate vars for this model:")
+        if(params$test) cat("\n\n >> cam fate vars for this model:\n")
         if(params$test) qvcalc::indentPrint(varInfo[,,mod])
         nowtime <- format(Sys.time(), "%H_%M")
         fname <- paste0(now_dir, sprintf("/vals_mod%s_seed%s_%s_%s.rds", mod, seed, nowtime, suffix))
