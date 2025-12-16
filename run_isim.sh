@@ -23,7 +23,7 @@ if [ "$2" = "test" ]; then
     ampWt=3
     suff="aw$ampWt"
     nImp=5
-    nRun=16
+    nRun=3
     nSave=1
     #ampWt=1
     #echo ">>> running as test; appending output to $TEST"
