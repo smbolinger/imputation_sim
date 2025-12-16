@@ -141,6 +141,7 @@ if(params$vbose >= 1) cat("\t *** verbosity = ", params$vbose)
 #if(params$xdeb) cat(" + EXTRA")
 #if(params$mdeb) cat("\t ** debug = minimum")
 cat("\n>> output will be saved every", params$j, "runs to dir:", now_dir,"\n\n")
+writeLines(now_dir, "last_out.txt")
 
 for (seed in params$seeds){
     outf <- paste0(now_dir,sprintf("/%s_loggedEvents.out",seed ))
@@ -209,8 +210,6 @@ for (seed in params$seeds){
                 if(skiptoNext) next
                 res[, mets[x], run,,mod,]  <- vals
             }
-
-            
             #if(params$test){
             if(TRUE){
                 coefFull <- list()
@@ -228,51 +227,34 @@ for (seed in params$seeds){
                                    family=binomial,
                                    method= brglm2::brglmFit,
                                    control=brglmControl(maxit=500))
-                    if(params$vbose>=3) cat("\n\t get sim coef values (exponentiated)")
+                    if(params$vbose>=3) cat("\n\t get sim coef values ")
                     #coefFull[[r]] <- exp(coef(fitFull))[-1]
-                    coefFull[[resp]] <- cbind(exp(coef(fitFull))[-1], exp(confint(fitFull))[-1,])
+                    coefFull[[resp]] <- cbind(coef(fitFull)[-1], confint(fitFull)[-1,])
+                    #coefFull[[resp]] <- cbind(exp(coef(fitFull))[-1], exp(confint(fitFull))[-1,])
+                    # does having exp here prevent the rownames from carrying over?
                     #vals <- cbind(coef(fit)[-1], confint(fit)[-1,]) # confint has 2 columns, so need comma
-                    if(params$vbose>=3) cat("\n\t get true coef values (exponentiated)")
-                    coefTrue[[resp]] <- cbind(exp(coef(fitTrue))[-1], exp(confint(fitTrue))[-1,])
+                    if(params$vbose>=3) cat("\t get true coef values ")
+                    coefTrue[[resp]] <- cbind(coef(fitTrue)[-1], confint(fitTrue)[-1,])
                     }
-                if(params$vbose >=3) cat("\n    >> print sim/true coef vals with CIs:\n")
+                if(params$vbose >=3) cat("\n    >> print sim/true coef vals with CIs (not exp):\n")
                 if(params$vbose >=3) qvcalc::indentPrint(coefFull, indent=16)
                 if(params$vbose >=3) qvcalc::indentPrint(coefTrue, indent=16)
                 #cat(sprintf("\n\n::::::::::::::::::::::::::::::: MICE OUTPUT COMPARED TO TRUE/SIM COEFS :::::::::::::::::::::::::::::::\n\n",run,mod ))## *~*~*~*~*
                # qvcalc::indentPrint(res[,, run,,mod,])
-                mvars <- names(coefTrue[[1]])
-                #coef1 <- rbind(coefFull[[1]], coefTrue[[1]])
-                #coef1 <- array()
-                #cat("\ncoef1:")
-                #print(coef1)
-                #out2 <- cbind(coefTrue[[2]][,1], coefFull[[2]][,1], ret[,1,2])
-                # this one doesn't have the CIs anyway
-                #coef2 <- cbind(coefTrue[[2]], coefFull[[2]])
-                #coef2 <- rbind(coefFull[[2]], coefTrue[[2]])
-                #colnames(coef1) <- c("sim", "true")
-                #colnames(coef2) <- c("sim", "true")
+                mvars <- rownames(coefTrue[[1]])
                 if(params$vbose >=3) cat("\n\tcheck match for is_u & true:\n")
                 if(params$vbose >=3) qvcalc::indentPrint(coefTrue[[1]][mvars,], indent=8)
                 ##print(coef1[mvars,])
                 #if(params$vbose >=3) print(coef1)
                 #print(res[mvars,,run,1,mod,1])
                 if(params$vbose >=3) qvcalc::indentPrint(res[mvars,"true",run,1,mod,1], indent=8)
-                #out1 <- sapply(res)
                 # vars should be in same order:
-                # make sur the vars are in th same order:
-                #out1 <- cbind(res[mvars,,run,1,mod,1], coef1[mvars,]) # 1=estimate, 1=is_u
-                #out2 <- cbind(res[mvars,,run,1,mod,2], coef2[mvars,]) # 1=estimate, 2=HF_mis
-                #cat("\n    >> MICE output compared to true and sim values:\n")
-                #cat("\n")
-                #qvcalc::indentPrint(out1, indent=8)
-                #cat("\n")
-                #qvcalc::indentPrint(out2, indent=8)
-            
-                #allCoef <- 
-                res[mvars,"sim",run,,mod,"is_u"] <-  coefFull[[1]][mvars,]
-                res[mvars,"sim",run,,mod,"HF_mis"] <-  coefFull[[2]][mvars,]
-                res[mvars,"true",run,,mod,"is_u"] <-  coefTrue[[1]][mvars,]
-                res[mvars,"true",run,,mod,"HF_mis"] <-  coefTrue[[2]][mvars,]
+                #res[mvars,"sim",run,,mod,"is_u"] <-  coefFull[[1]][mvars,]
+                res[mvars,"sim",run,,mod,"is_u"] <-  exp(coefFull[[1]][mvars,])
+                #res[mvars,"sim",run,,mod,"HF_mis"] <-  coefFull[[2]][mvars,]
+                res[mvars,"sim",run,,mod,"HF_mis"] <-  exp(coefFull[[2]][mvars,])
+                res[mvars,"true",run,,mod,"is_u"] <-  exp(coefTrue[[1]][mvars,])
+                res[mvars,"true",run,,mod,"HF_mis"] <-  exp(coefTrue[[2]][mvars,])
             }
             #if(run %% params$j == 0){
                     #begn <- run-params$j
