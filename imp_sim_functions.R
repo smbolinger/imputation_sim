@@ -15,7 +15,7 @@ debugging <- FALSE # for uickly setting values when working in the file with the
 if(FALSE){
   dat <- dat4sim
 }
-add_dummy <- function(dat, debug=FALSE){
+add_dummy <- function(dat, vb=0){
 #    dummy_vars <- model.matrix(~ cam_fate -1, data = dat)
     dummy_vars <- model.matrix(~ cam_fate -1, data = as.data.table(dat))
     dummy_vars <- dummy_vars[,-1]
@@ -32,7 +32,7 @@ add_dummy <- function(dat, debug=FALSE){
     # dat4amp <- cbind(dat4amp, dummy_vars, speciesLETE, speciesCONI)
     dat <- cbind(dat, dummy_vars)
     #print(class(dat)) # ~*~*~*
-    # if (debug) cat("\n\n>> add dummy variables and remove factors. new columns:\n", names(dat))
+    #if (debug) cat("\n\n>> add dummy variables and remove factors. new columns:\n", names(dat))
     return(dat)
 }
 
@@ -43,7 +43,7 @@ add_dummy <- function(dat, debug=FALSE){
 if(FALSE){
   dat <-amp_out_wt$amp
 }
-add_fact <- function(dat, facToNum=FALSE, debug=FALSE){ 
+add_fact <- function(dat, facToNum=FALSE, vb=0){ 
     #cat("\n NOTE: can speed up conversion back to factor with tidytable\n")
     # I already know what the dummy var names are in this case; not a general purpose function
     # dat <- amp_out$amp
@@ -94,7 +94,7 @@ add_fact <- function(dat, facToNum=FALSE, debug=FALSE){
     rem_col <- na.omit(str_extract(string = names(dat), pattern = "cam_fate\\w+|species\\w+"))
     # names(dat)[ c(3:8, 12,13)]
     # names(dat)
-    # if (debug) cat("\n>> converted dummies to factors. all columns:\n", names(dat)) 
+    #if (debug) cat("\n>> converted dummies to factors. all columns:\n", names(dat)) 
     # if (debug) cat("\n>> columns to remove:\n", names(dat)[rem_col])
     # if (debug) cat("\n>> columns to remove:\n", rem_col)
 
@@ -116,10 +116,10 @@ add_fact <- function(dat, facToNum=FALSE, debug=FALSE){
 ##### MAKE SIMULATED DATA ###############################################################
 ########################################################################################
 
-mkSimDat <- function(seeed, nd, mpatt, wts, new_prop=0.2, patt_freq=c(0.45,0.45,0.1),wt=TRUE, debug=FALSE, xdebug=FALSE, convFact=FALSE, facToNum=FALSE){
+mkSimDat <- function(seeed, nd, mpatt, wts, new_prop=0.2, patt_freq=c(0.45,0.45,0.1),wt=TRUE, test=FALSE, convFact=FALSE, facToNum=FALSE,vbose=0){
   #cat("mkSimDat seed=", seeed, class(seeed))
   # if(method=="amp"){
-    dat4amp <- add_dummy(nd, debug=debug)
+    dat4amp <- add_dummy(nd, vb=0)
     #set.seed(seed=seeed)
     # no_miss <- c("obs_int", "fdate", "is_u", "speciesLETE", "speciesCONI")
     no_miss <- c("obs_int", "fdate", "is_u", "speciesCONI")
@@ -140,7 +140,7 @@ mkSimDat <- function(seeed, nd, mpatt, wts, new_prop=0.2, patt_freq=c(0.45,0.45,
       xtabs(formula = ~ cam_fate + species, data = out)
     }
     ### *~*~*~*~* #######
-    # if(debug) cat("\n\nCreate more new missing values, with weighted probabilities:\n")
+    #if(debug) cat("\n\nCreate more new missing values, with weighted probabilities:\n")
     # if(debug)  print(mice::md.pattern(amp_out_wt$amp, rotate.names = TRUE))
     # missing_tab("amp_out_wt", prVars)
     
@@ -149,7 +149,7 @@ mkSimDat <- function(seeed, nd, mpatt, wts, new_prop=0.2, patt_freq=c(0.45,0.45,
     datList$amp
     # if(debug) print(str(datList$amp))
     # if (debug) print(class(datList$amp))
-    if (convFact) datList$amp <- add_fact(dat = datList$amp, facToNum=facToNum, debug=debug) # could probably reference the global debug instead...
+    if (convFact) datList$amp <- add_fact(dat = datList$amp, facToNum=facToNum, vb=vbose) # could probably reference the global debug instead...
     return(datList)
 }
 
@@ -175,7 +175,7 @@ if(debugging){
 # mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, m=20, fam=binomial, regMet="brglm_fit", iter=500, passive="both", debug=FALSE, xdebug=FALSE, impplot=FALSE){
 #mkImpSim <- function(fullDat, ampDat, cols, resp, mods, vars, met, form_list, m=20, fam=binomial, regMet="brglm_fit", iter=500, debug=FALSE, xdebug=FALSE, impplot=FALSE){
 # mkImpSim <- function(fullDat, ampDat,pr_list, resp_list, mod, vars, met, form_list, met_list, m=20, fam=binomial, regMet="brglm_fit", iter=500, debug=FALSE, xdebug=FALSE, impplot=FALSE){
-mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, form_list,outFile, met_list, m=20, fam=binomial, regMet="brglm_fit", iter=500, debug=FALSE, xdebug=FALSE, impplot=FALSE){
+mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, outFile,form_list, met_list, m=20, fam=binomial, regMet="brglm_fit", iter=500,impplot=FALSE, vbose=0){
     pr_list <-  c("species", "cam_fate", "obs_int", "nest_age", "fdate")
     # cat("\nvars in this df:", vlist)
     #ret    <- array(NA, dim=c(length(vars), 3))
@@ -209,7 +209,7 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, form_list,outFil
         return(ret)
 
     } else {
-        # if (debug) cat("\n===== method:", met)
+        #if (debug) cat("\n===== method:", met)
         # for(r in resp_list){
         for(r in seq_along(resp_list)){
             resp <- resp_list[r]
@@ -224,7 +224,7 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, form_list,outFil
             # if (met=="cf_cc") ampDat <- ampDat %>% filter(if_any(cfates, ~ !is.na(.)))
               #for(y in seq_along(mods)){
                 # needs to be a named list; but if you keep the names, it doesn't drop NA...
-            # cat("\n<><><><><>")
+            #cat("\n<><><><><>")
             # print(dimnames(met_list))
             metList <- met_list[resp,,met]
             # cat("\ngot method list")
@@ -261,8 +261,8 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, form_list,outFil
                        met=="passive" ~ "mice::mice(ampDat, method=metList, m=m, formulas=frmla, maxit=10, print=FALSE)",
                        #.default="mice::mice(ampDat, method=metList, m=m, print=FALSE)"
                        ### turn off print=FALSE to get output from imputations as they happen
-                       .default="mice::mice(ampDat, method=metList, m=m, formulas=frmla,print=FALSE)"
                        #.default="mice::mice(ampDat, method=metList, m=m,print=FALSE)"
+                       .default="mice::mice(ampDat, method=metList, m=m, formulas=frmla,print=FALSE)"
             )
             imp <- eval(parse(text=impCall))
 
@@ -274,14 +274,14 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, form_list,outFil
                 #print(imp$loggedEvents)
             }
             # if(impplot) visImp(imp)  # ~*~*~*
-            # if(debug) cat("\n>> fitting model", mods[y])
+            #if(debug) cat("\n>> fitting model", mods[y])
             fit = with(imp,
                  glm( as.formula( paste0(resp, modd) ),
                       family=fam,
                       method = regMet,
                       control=brglmControl(maxit=iter)
                  ))
-            # if(debug) cat("\n>> pooling model fit\n") # ~*~*~*
+            #if(debug) cat("\n>> pooling model fit\n") # ~*~*~*
             pool = summary(mice::pool(fit), "all", conf.int=TRUE, exponentiate=TRUE)
             # print(pool)
             rownames(pool) = pool[,"term"]
@@ -338,16 +338,19 @@ visImp <- function(imp){
 ########################################################################################
 
 
+
 #mkResp <- function(sDat, betas, form, debug=FALSE, xdebug=FALSE){
-#mkResp <- function(resp_list, mod, s_size, cMat, mList, betas,  debug=FALSE, xdebug=FALSE){
-mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE, xdebug=FALSE){
+#mkResp <- function(resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE, xdebug=FALSE){
+#mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE, xdebug=FALSE, mindebug=FALSE){
+mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, vbose=0){
     #dummySim <- as.data.table(model.matrix(form, data = sDat))
     #tryCatch(
     
     set.seed(seed=seed)
     success <- FALSE
     while(!success){
-        sDat <- mkSim(s_size, cMat, mList, betas, fprob, sprob,debug=debug, xdebug=xdebug)
+        #sDat <- mkSim(s_size, cMat, mList, betas, fprob, sprob, debug=debug, xdebug=xdebug)
+        sDat <- mkSim(s_size, cMat, mList, betas, fprob, sprob, vb=vbose)
         form <- as.formula(mod)
         dummySim <- model.matrix(form, data = sDat)
         #success <- dim(dummySim)[2]==dim(betas)[1]
@@ -358,6 +361,9 @@ mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob
     sDat[,HF_mis := respMatMul(dummySim, betas[[2]])]
     sDat[,is_u := as.factor(sDat[,is_u])]
     sDat[,HF_mis := as.factor(sDat[,HF_mis])]
+    #cat("\n>> created response vars:")
+    #print(sDat[,HF_mis])
+    #print(sDat[,is_u])
     return(sDat)
     #    sDat[,is_u := mkResp(sDat, (betas[[1]]), form, debug=debug )]
     #    sDat[,HF_mis := mkResp(sDat, (betas[[2]]), form, debug=debug )]
@@ -384,14 +390,15 @@ mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob
     #return(y)
 }
 
-respMatMul <- function( dummySim, betas, debug=FALSE){
-    #if(debug) cat("matrix multiplication:", dim(dummySim), dim(betas))
+respMatMul <- function( dummySim, betas, vb=0){
+    #if(vb>=1) cat("\n***MATRIX MULTIPLICATION***", dim(dummySim), dim(betas))
     eta <- dummySim %*% betas 
     y <- rbinom(nrow(dummySim), size = 1, prob = binomial()$linkinv(eta)) # The outcome    
     return(y)
 }
 
-mkSim <- function( s_size, cMat, mList, betas,fprob, sprob, stratify=TRUE, debug=FALSE, xdebug=FALSE){
+#mkSim <- function( s_size, cMat, mList, betas,fprob, sprob, stratify=TRUE, debug=FALSE, xdebug=FALSE, mindebug=FALSE){
+mkSim <- function( s_size, cMat, mList, betas,fprob, sprob, stratify=TRUE, vb=0){
     fates <- names(fprob)
     spp   <- names(sprob)
     #if(debug) cat("\nfates:", fates, "& species:", spp) # ~*~*~*
@@ -406,7 +413,7 @@ mkSim <- function( s_size, cMat, mList, betas,fprob, sprob, stratify=TRUE, debug
             # cat("\n>>> species:", sp, "\t& means:", mList[[sp]], "\t& correlation matrix:\n") # ~*~*~*
             # print(cMat[[sp]])
             simDat[[sp]] <- as.data.table(MASS::mvrnorm(n=round(s_size*sprob[s]), mu=mList[[sp]], Sigma=cMat[[sp]]))
-            # cat("\n>> adding camera fates\n") # ~*~*~*
+            #cat("\n>> adding camera fates\n") # ~*~*~*
             simDat[[sp]][,cam_fate := sample(fates, size=nrow(simDat[[sp]]), replace=T, prob=fprob)]
         }
         #cat("\n>>> created sim data") # ~*~*~*
