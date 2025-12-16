@@ -47,10 +47,6 @@ if(FALSE){
 add_fact <- function(dat, facToNum=FALSE, vb=0){ 
     #cat("\n NOTE: can speed up conversion back to factor with tidytable\n")
     # I already know what the dummy var names are in this case; not a general purpose function
-    #cat("\n\t>> cam fates before conversion:\n\t", colSums(dat))
-    #if(debug) cat("\n\t>> get positions of NAs:\n\t")
-    #qvcalc::indentPrint(head(dat[!complete.cases(dat)]))
-    #naPos <- which(is.na(dat$))
     dat <- as.data.frame(dat) %>% 
     mutate(cam_fate = case_when(
       cam_fateA==1 ~ "A",
@@ -64,9 +60,9 @@ add_fact <- function(dat, facToNum=FALSE, vb=0){
     mutate(cam_fate = if_else(is.na(HF_mis), NA, cam_fate))
 
     if(vb>=2) cat("\n\t>> check new factor variable & NA distribution after converting:\n")
-    if(vb>=2) qvcalc::indentPrint( table(dat$cam_fate, useNA="ifany"), indent=16)
+    if(vb>=2) qvcalc::indentPrint( table(dat$cam_fate, useNA="ifany"), indent=12)
     cat("\n")
-    if(vb>=2) qvcalc::indentPrint( colSums(is.na(dat)), indent=16)
+    if(vb>=2) qvcalc::indentPrint( colSums(is.na(dat)), indent=12)
 
     if(facToNum){
     dat <- dat %>%
@@ -119,39 +115,29 @@ add_fact <- function(dat, facToNum=FALSE, vb=0){
 mkSimDat <- function(seeed, nd, mpatt, wts, new_prop=0.2, patt_freq=c(0.45,0.45,0.1),wt=TRUE, test=FALSE, convFact=FALSE, facToNum=FALSE,vbose=0){
     if(vbose>=1) cat("\n\n<><><><><><><><><><><><><><><> MAKE AMPUTED DATA: <><><><><><><><><><><><><><><> \n ")
     if(vbose>=3) cat("\n\t>> mkSimDat seed=", seeed, class(seeed))
-  # if(method=="amp"){
     dat4amp <- add_dummy(nd, vb=0)
-    #set.seed(seed=seeed)
-    # no_miss <- c("obs_int", "fdate", "is_u", "speciesLETE", "speciesCONI")
     no_miss <- c("obs_int", "fdate", "is_u", "speciesCONI")
     is_miss <- colnames(mpatt)[!colnames(mpatt) %in% no_miss]
     new_order <- c(is_miss, no_miss)
-    ### *~*~*~*~* #######
-    if(vbose>=3) cat("\n\t>> reorder columns:\n\t\t", new_order)
+    if(vbose>=3) cat("\n\t>> reorder columns:\n\t\t", new_order) ### *~*~*~*~* #######
     dat4amp <- dat4amp %>% select(all_of(new_order)) # reorder the columns to match the matrix
-    
     suppressWarnings(amp_out_wt <- mice::ampute(dat4amp, prop = new_prop, patterns = mpatt, freq = patt_freq,weights = wts))
-    
     if(vbose>=2) cat("\n\t>> Create more new missing values, with weighted probabilities:\n")
-    if(vbose>=3)  qvcalc::indentPrint(mice::md.pattern(amp_out_wt$amp, rotate.names = TRUE), indent=16)
+    if(vbose>=3)  qvcalc::indentPrint(mice::md.pattern(amp_out_wt$amp, rotate.names = TRUE), indent=12)
     #if(test)  (mice::md.pattern(amp_out_wt$amp, rotate.names = TRUE), indent=8) #figuree out how to save to file
     # missing_tab("amp_out_wt", prVars)
     
-    if(wt) {datList <- amp_out_wt} else {datList <- amp_out}
-    ### *~*~*~*~* #######
+    if(wt) {datList <- amp_out_wt} else {datList <- amp_out} ### *~*~*~*~* #######
     datList$amp
     if(vbose>=3) cat("\n\t>> the amputed data before converting to factors:\n")
-    #if(vbose>=3) qvcalc::indentPrint(str(datList$amp), indent=16)
-    if(vbose>=3) qvcalc::indentPrint(summary(datList$amp), indent=16)
+    if(vbose>=3) qvcalc::indentPrint(summary(datList$amp), indent=12)
     if(vbose>=3) cat("\n\t>> & the NAs:\n")
-    if(vbose>=3) qvcalc::indentPrint(colSums(is.na(datList$amp)), indent=16)
-    #if(vbose>=3) qvcalc::indentPrint(names(datList$amp), indent=16)
-    # if (debug) print(class(datList$amp))
+    if(vbose>=3) qvcalc::indentPrint(colSums(is.na(datList$amp)), indent=12)
     if (convFact) datList$amp <- add_fact(dat = datList$amp, facToNum=facToNum, vb=vbose) # could probably reference the global debug instead...
     if(vbose>=2) cat("\n\n<><><><><><><><><><<><><><><<><><><><> AMPUTED DATA: <><><><><><><><><><<><><><><<><><><><>>>\n ")
-    if(vbose>=2) qvcalc::indentPrint(str(datList$amp), indent=16)
+    if(vbose>=2) qvcalc::indentPrint(str(datList$amp), indent=12)
     if(vbose>=1) cat("\n\tNA summary:\n")
-    if(vbose>=1) qvcalc::indentPrint(colSums(is.na(datList$amp)), indent=16)
+    if(vbose>=1) qvcalc::indentPrint(colSums(is.na(datList$amp)), indent=12)
     ampd <- datList$amp
     if (test) vmiss <- naniar::vis_miss(ampd)
     if (test) now <- format(Sys.time(), "%d%b%H%M%S")
@@ -167,9 +153,9 @@ mkSimDat <- function(seeed, nd, mpatt, wts, new_prop=0.2, patt_freq=c(0.45,0.45,
     #if(debug) qvcalc::indentPrint(table(datList$amp$cam_fate), indent=8)
     #if(debug) qvcalc::indentPrint(table(ampd$cam_fate), indent=8)
     if(vbose>=1) cat("\n\t AMPUTED DATA-summary:\n")
-    if(vbose>=1) qvcalc::indentPrint(summary(datList$amp), indent=16)
+    if(vbose>=1) qvcalc::indentPrint(summary(datList$amp), indent=12)
     if(vbose>=3) cat("\n\tALL THE AMPUTED DATA:\n")
-    if(vbose>=3) qvcalc::indentPrint(datList$amp, indent=16)
+    if(vbose>=3) qvcalc::indentPrint(datList$amp, indent=12)
     return(datList)
 }
 
@@ -195,69 +181,38 @@ if(debugging){
 ### Nest the loop inside the if statement so you aren't running the if check every loop?
 # mkImpSim <- function(fullDat, ampDat,pr_list, resp_list, mod, vars, met, form_list, met_list, m=20, fam=binomial, regMet="brglm_fit", iter=500, debug=FALSE, xdebug=FALSE, impplot=FALSE){
 mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, outFile,form_list, met_list, m=20, fam=binomial, regMet="brglm_fit", iter=500,impplot=FALSE, vbose=0){
-    #cat("\n\t>>>>>> prepare for imputation")# ~*~*~
-    #print(str(ampDat))
-    #if(xdebug) cat("- amputed data:")
-    #cat("\n")
-    #if(xdebug) bprint(aDat)
-    #if(xdebug) qvcalc::indentPrint(str(aDat))
-    #if(xdebug) qvcalc::indentPrint(rowSums(is.na(aDat)))
     if(vbose>=3) cat("\t\n*.*.*.VARS:",vars,".*.*.*\n")
-    if(vbose>=3){
-        coefFull <- list()
-        #cat("\n\timporting true & sim values")
-        coefTrue <- list()
-        for(r in seq_along(resp_list)){
-            resp <- resp_list[r]
-            fitFull <- glm(as.formula(paste(resp, modd)), data=fullDat, family=binomial, method=regMet, control=brglmControl(maxit=iter))
-            if(vbose>=3) cat("\n\t get sim coef values")
-            if(vbose>=3) qvcalc::indentPrint(fitFull, indent=16)
-            coefFull[[r]] <- coef(fitFull)[-1]
-            trueDat <- readRDS("dat_complete.rds")
-            #trueDat <- read.csv("dat_complete.csv")
-            fitTrue <- glm(as.formula(paste(resp, modd)), data=trueDat, family=binomial, method=regMet, control=brglmControl(maxit=iter))
-            if(vbose>=3) cat("\n\t get true coef values")
-            if(vbose>=3) qvcalc::indentPrint(fitTrue, indent=16)
-            coefTrue[[r]] <- coef(fitTrue)[-1]
-        }
-
-        if(vbose>=2){
-            cat("\n\t >> simulated coefficients:\n")
-            qvcalc::indentPrint(coefFull, indent=16)
-            cat("\n\t >> true coefficients:\n")
-            qvcalc::indentPrint(coefTrue, indent=16)
-        }
-
-    }
     pr_list <-  c("species", "cam_fate", "obs_int", "nest_age", "fdate")
     ret    <- array(NA, dim=c(length(vars), 3, length(resp_list)))
     #dimnames(ret) <- list(vars, c( "estimate", "2.5 %", "97.5 %","n"), resp_list)
     dimnames(ret) <- list(vars, c( "estimate", "2.5 %", "97.5 %"), resp_list)
     if(vbose>=3) cat("\n\t>>>> make empty matrix to store output") # ~*~*~*
-    if(vbose>=3) qvcalc::indentPrint(ret, indent=16)
+    if(vbose>=3) qvcalc::indentPrint(ret, indent=12)
     if (met == "cc"){
         for(r in seq_along(resp_list)){
             resp <- resp_list[r]
-            #if(vbose==2) cat("\n===========================================================================================")
-            if(vbose>=2) cat("\n==================== complete-case analysis \t resp:", resp," =====================")# ~*~*~*
-            if(vbose>=2) cat("\n===========================================================================================\n")
+            #if(vbose==2) cat("\n    ===========================================================================================")
+            if(vbose>=2) cat("\n    ==================== complete-case analysis \t resp:", resp," =====================")# ~*~*~*
+            if(vbose>=2) cat("\n    ===========================================================================================\n")
             vlist <- colnames(model.matrix(as.formula(paste0(resp, modd)),data = aDat))[-1]
             cols <- c(resp, pr_list)
             if(vbose>=2) cat("\n\t>> vars in this df:", vlist,"\n\t\t& cols for analysis:", cols) # ~*~*~*
             ampDat <- aDat %>% select(all_of(cols)) # need to select the cols that are relevant for mod?
             if(vbose>=3) cat("\n\tcheck incoming data:\n")
-            if(vbose>=3) qvcalc::indentPrint(summary(ampDat), indent=16)
+            if(vbose>=3) qvcalc::indentPrint(summary(ampDat), indent=12)
             dat1 <- ampDat[complete.cases(ampDat),]
             fit = glm(as.formula(paste0(resp, modd)), data=dat1, family=fam, method=regMet, control=brglmControl(maxit=iter))
             vals <- cbind(coef(fit)[-1], confint(fit)[-1,]) # confint has 2 columns, so need comma
             if(vbose>=2) cat("\n\t>> output vals:\n") # ~*~*~*
-            if(vbose>=2) qvcalc::indentPrint(vals, indent=16)# ~*~*~
+            if(vbose>=2) qvcalc::indentPrint(vals, indent=12)# ~*~*~
+            if(vbose>=2) cat("\n\t>> model fit summary:\n") # ~*~*~*
+            if(vbose>=3) qvcalc::indentPrint(summary(fit), indent=12)# ~*~*~
             rownames(vals) <- names(coef(fit))[-1]
             colnames(vals) <-  c("estimate", "2.5 %", "97.5 %") # this doesn't work if not a df
             
             ret[vlist,,r]  <- as.matrix(exp(vals))# remove chr column AFTER match so others aren't coerced to chr when you convert to matrix
             if(vbose>=3) cat("\n\tret, FILLED IN (exponentiated):\n") # ~*~*~*
-            if(vbose>=3) qvcalc::indentPrint(ret[,,r], indent=16)
+            if(vbose>=3) qvcalc::indentPrint(ret[,,r], indent=12)
             #if(vbose==2) cat("\n=== complete cases: ===\n")
             #if(vbose==2) qvcalc::indentPrint(ret[,,r], indent=16)
         }
@@ -266,9 +221,9 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, outFile,form_lis
     } else {
         for(r in seq_along(resp_list)){
             resp <- resp_list[r]
-            #if (debug) cat("\n===========================================================================================")
-            if(vbose>=2) cat("\n======================= method:", met, "\t resp:", resp," =============================== ")
-            if(vbose>=2) cat("\n===========================================================================================\n")
+            #if (debug) cat("\n    ===========================================================================================")
+            if(vbose>=2) cat("\n    ======================= method:", met, "\t resp:", resp," =============================== ")
+            if(vbose>=2) cat("\n    ===========================================================================================\n")
             vlist <- colnames(model.matrix(as.formula(paste0(resp, modd)),data = aDat))[-1]
             cols <- c(resp, pr_list)
             if(vbose>=2)cat("\n\t>> vars in this df:", vlist,"\n\t\t& cols for imputation:", cols) # ~*~*~*
@@ -280,7 +235,7 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, outFile,form_lis
             if(vbose>=3) cat("\n\t>>>> levels of factors after droplevels():", levels(aDat$cam_fate),"\t", levels(aDat$HF_mis),"\t", levels(aDat$species))
             if (met=="cf_cc") ampDat <- ampDat  %>% filter(!is.na(cam_fate))
             if(vbose>=3) cat("\n\tcheck incoming data:\n")
-            if(vbose>=3) qvcalc::indentPrint(summary(ampDat), indent=16)
+            if(vbose>=3) qvcalc::indentPrint(summary(ampDat), indent=12)
             if(vbose>=2) cat("\n\t>>>> vars that are missing values:", names(which(colSums(is.na(ampDat))>0)))
             metList <- met_list[resp,,met]
             inters <- sapply(modd,  function(x)  str_extract_all(x, "\\w+(?=\\s\\*)|(?<=\\*\\s)\\w+"))[[1]]
@@ -292,10 +247,10 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, outFile,form_lis
             metList <- metList[!is.na(metList)]
             if(all(is.na(metList))) metList=NULL
 
-            if(vbose>=2) cat("\n\n<><><><><><><><><><><><><><><> imputation with MICE <><><><><><><><><><><><><><><> \n ")
+            if(vbose>=2) cat("\n\n    <><><><><><><><><><><><><><><> imputation with MICE <><><><><><><><><><><><><><><> \n ")
             if(vbose>=2){ ## *~*~*~*~*
                 cat("\n\tMETHOD LIST for",met,":\n") # ~*~*~*
-                qvcalc::indentPrint(metList, indent=16)
+                qvcalc::indentPrint(metList, indent=12)
                 #cat("\n")
             }
 
@@ -314,13 +269,13 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, outFile,form_lis
             )
             if(vbose>=2) cat("\n\n\t>> call:", impCall,"\n")
             imp <- eval(parse(text=impCall))
-            if(vbose>=2) cat("\n\n<><><><><><><><><><><><><><><> MICE results <><><><><><><><><><><><><><><> \n")
+            if(vbose>=2) cat("\n\n    <><><><><><><><><><><><><><><> MICE results <><><><><><><><><><><><><><><> \n")
             if(vbose>=3) cat("\n\t>> the imputed values:\n")
             #if(xdebug) qvcalc::indentPrint(str(imp$imp))
             #impd <- sapply(imp$imp, function(x) any(rowSums(x)>0))
             #impd <- sapply(imp$imp, function(x) any(x>0))
             impd <- sapply(imp$imp, function(x) any(!is.na(x)))
-            if(vbose>=3) qvcalc::indentPrint(impd, indent=16)
+            if(vbose>=3) qvcalc::indentPrint(impd, indent=12)
             if(vbose>=2) cat("\n\t>>>>> vars that were imputed:", names(impd)[impd])
 
             if(length(imp$loggedEvents > 0)) { # ~*~*~*
@@ -328,10 +283,10 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, outFile,form_lis
                 cat("\n\n it im dep \t meth \t\tout\n", file=outFile, append=TRUE)
                 cat(paste(imp$loggedEvents, collapse=" "), file=outFile, append=TRUE)
                 cat(sprintf("\n\t*** LOGGED EVENTS FOR METHOD %s*******************************\n", met))
-                qvcalc::indentPrint(imp$loggedEvents, indent=16)
+                qvcalc::indentPrint(imp$loggedEvents, indent=12)
             }
             if(impplot) visImp(imp)  # ~*~*~*
-            if(vbose>=2) cat("\n\n<><><><><><><><><><><><><><><> Analysis <><><><><><><><><><><><><><><>\n ")
+            if(vbose>=2) cat("\n\n    <><><><><><><><><><><><><><><> Analysis <><><><><><><><><><><><><><><>\n ")
             if(vbose>=2) cat("\n\t>> fitting model", modd)
             fit = with(imp,
                  glm( as.formula( paste0(resp, modd) ),
@@ -348,34 +303,21 @@ mkImpSim <- function(fullDat, aDat, resp_list, modd, vars, met, outFile,form_lis
             #print(pool)
             if(vbose>=2){
                 cat("\n\tpool() OUTPUT:\n") # ~*~*~*
-                qvcalc::indentPrint(pool[,c("estimate", "2.5 %", "97.5 %")], indent=16)
+                qvcalc::indentPrint(pool[,c("estimate", "2.5 %", "97.5 %")], indent=12)
                 #outp <- pool[,c("estimate", "2.5 %", "97.5 %")]
                 #comp <- cbind()
             }
             if(vbose>=3){
                 cat("\n\tPUT IT HERE:\n")
-                qvcalc::indentPrint(ret[vlist,,r], indent=16)
+                qvcalc::indentPrint(ret[vlist,,r], indent=12)
             }
             ret[vlist,,r] <- as.matrix(pool[, c("estimate", "2.5 %", "97.5 %")])
             if(vbose>=3) cat("\n\tret, FILLED IN:\n")
-            if(vbose>=3) qvcalc::indentPrint(ret[,,r], indent=16)
+            if(vbose>=3) qvcalc::indentPrint(ret[,,r], indent=12)
             #if(mindebug) cat(sprintf("\n=== imputation results for %s & %s: ===\n", met, resp))
             #if(mindebug) qvcalc::indentPrint(ret[,,r], indent=16)
         }
     #if(vbose>=2) print(ret[,1,])
-    if(vbose>=3){
-        out1 <- cbind(coefTrue[[1]], coefFull[[1]], ret[,1,1])
-        #out2 <- cbind(coefTrue[[2]][,1], coefFull[[2]][,1], ret[,1,2])
-        # this one doesn't have the CIs anyway
-        out2 <- cbind(coefTrue[[2]], coefFull[[2]], ret[,1,2])
-        colnames(out1) <- c("true", "sim", "estimate")
-        colnames(out2) <- c("true", "sim", "estimate")
-        cat("\n\tMICE output compared to true and sim values:\n")
-        cat("\n")
-        qvcalc::indentPrint(out1, indent=16)
-        cat("\n")
-        qvcalc::indentPrint(out2, indent=16)
-    }
     return(ret[vars,,])
     }
 }
@@ -392,7 +334,7 @@ printImp <- function(impDat, simDat, trueDat){
     #printImp <- cbind(pool, sim, actual)
     names(printImp) <- c("POOL", "SIM", "ACTUAL")
     cat("\n\n oOoOoOo Comparison oOoOoOo\n")
-    qvcalc::indentPrint(printImp, indent=16)
+    qvcalc::indentPrint(printImp, indent=12)
 }
 
 ########################################################################################
@@ -423,7 +365,7 @@ mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob
     sDat[,HF_mis := as.factor(sDat[,HF_mis])]
     if(vbose>=1){
         cat("\n\t>> simulated data with response variables:\n ")
-        qvcalc::indentPrint(sDat, indent=16)
+        qvcalc::indentPrint(sDat, indent=12)
     }
     #cat("\n>> added response variables, which should be factors:", sapply(sDat[,c(HF_mis, is_u)], is.factor))
     # DOESN'T work with data.table:
@@ -442,7 +384,7 @@ mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob
     #qvcalc::indentPrint(sapply(fits[[mnums==names(m)]], summary))
     # it's already a summary
     #qvcalc::indentPrint(fits[mnums==modnum], indent=16)
-    if(vbose>=3) qvcalc::indentPrint(coefss[mnums==modnum], indent=16)
+    if(vbose>=3) qvcalc::indentPrint(coefss[mnums==modnum], indent=12)
     fitSim1 <- summary(glm(as.formula(paste0("is_u",mod)),
                        family=binomial,
                        data=sDat,
@@ -454,8 +396,8 @@ mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob
     if(vbose>=1){
         cat("\n\t>>>> model coefficients for simulated data, model = ",mod,"\n")
         #qvcalc::indentPrint(coef(fitSim1[[1]]), indent=16)
-        qvcalc::indentPrint(fitSim1[[1]], indent=16)
-        qvcalc::indentPrint(fitSim2[[1]], indent=16)
+        qvcalc::indentPrint(fitSim1[[1]], indent=12)
+        qvcalc::indentPrint(fitSim2[[1]], indent=12)
     #    return(list(sDat, fitSim1, fitSim2))
     }
     #sDat[,HF_mis := respMatMul(dummySim, betas[[2]])]
@@ -482,7 +424,8 @@ respMatMul <- function( dummySim, betas, vb=0){
      #if(debug) cat("\n\t>>>> beta values, class:", class(betas), "\n\n") # ~*~*~*
      if(vb>=1) cat("\n\t>>>> beta values multiplied by design matrix = eta:\n\n") # ~*~*~*
      #if (debug) qvcalc::indentPrint(cbind(betas, dummySim, eta))
-     if (vb>=1) qvcalc::indentPrint(paste(betas, dummySim, eta), indent=16)
+    cat("\ndummySim:", str(dummySim), "eta:", str(eta))
+     #if (vb>=1) qvcalc::indentPrint(paste(betas, dummySim, eta), indent=16)
      #if(debug) qvcalc::indentPrint(rbind(head(betas), tail(betas)), indent=8)
      #if(debug) qvcalc::indentPrint(paste(betas,collapse=" "), indent=8)
      #if(debug) qvcalc::indentPrint(tail(betas), indent=8)
@@ -536,9 +479,9 @@ mkSim <- function( s_size, cMat, mList, betas,fprob, sprob, stratify=TRUE, vb=0)
     } 
     else {
         if(vb>=2) cat( "\n\t>> means:\n")
-        qvcalc::indentPrint(mList, indent=16)
+        qvcalc::indentPrint(mList, indent=12)
         if(vb>=2) cat("\n\t& correlation matrix:\n") # ~*~*~*
-        qvcalc::indentPrint(cMat, indent=16)
+        qvcalc::indentPrint(cMat, indent=12)
         sDat <- as.data.table(MASS::mvrnorm(n=s_size, mu=mList, Sigma=cMat))
         sDat[,species := sample(spp, size=nrow(sDat), replace=T, prob=sprob)]
         sDat[,cam_fate := sample(fates, size=nrow(sDat), replace=T, prob=fprob)]
@@ -551,7 +494,7 @@ mkSim <- function( s_size, cMat, mList, betas,fprob, sprob, stratify=TRUE, vb=0)
     id <- seq(1,s_size)
     sDat <- cbind(id, sDat)
     if(vb>=3) cat("\n    >>>>> simulated data frame w/o dummy variables:\n") # ~*~*~*
-    if(vb>=3) qvcalc::indentPrint(sDat, indent=16)
+    if(vb>=3) qvcalc::indentPrint(sDat, indent=12)
     #if(debug) print(str(sDat))
     return(sDat)
     #sDat[,is_u := mkResp(sDat, as.matrix(betas[[1]]), form, debug=debug )]
