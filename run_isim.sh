@@ -3,7 +3,7 @@
 
 if [ $# -eq 0 ]; then
     echo ">> No arguments provided!"
-    echo ">> Usage: $0 - [seed] [test (optional)] [verbosity level 1-3(optional)]"
+    echo ">> Usage: $0 - [seed] [test | no] [other arguments passed to isim.R]"
     exit 1
 else
     echo "argument(s) passed: $1 $2 $3"
@@ -27,14 +27,26 @@ if [ "$2" = "test" ]; then
     nSave=1
     #ampWt=1
     #echo ">>> running as test; appending output to $TEST"
-    echo -e "\n>>> running as test; seed=$1, $nImp imputations, $nRun reps; appending output to $OUT"
-    if [ "$3" = "v2" ]; then
-        deb=2
-    elif [ "$3" = "v3" ]; then
-        deb=3
-    else
-        deb=1
+    #echo -e "\n>>> running as test; seed=$1, $nImp imputations, $nRun reps; appending output to $OUT"
+    deb=2
+    if [ ! -z "$3" ]; then
+        echo -e "\n>>> running as test with seed $1; other args passed to script; appending output to $OUT"
+        nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "$testOn" "$@" & # pass all remaining arguments to script
+    else # use defaults
+        echo -e "\n>>> running as test with $nRun runs, $nImp imputations, & seed $1; appending output to $OUT"
+        nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "v$deb" "$testOn"&
     fi
+
+    #if [ "$3" = "v2" ]; then
+    #    deb=2
+    #elif [ "$3" = "v3" ]; then
+    #    deb=3
+    #else
+    #    deb=1
+    #fi
+    #if [ ! -z "$4" ]; then
+    #    nRun="$4"
+    #fi
 else
 	#echo "running with $1 as name: $IMP imputations, $REP reps; output to $OUT"
         OUT="${1}.out" # brackets (string concatenation) to prevent '.out' being interpreted as part of var name
@@ -44,12 +56,20 @@ else
         nRun=100
         nSave=100
         testOn=""
-	echo -e "\n>>> seed=$1, $nImp imputations, $nRun reps; output appended to $OUT"
-        if [ "$2" = "v1" ]; then
-            deb=1
-        else
-            deb=0
-        fi   
+        deb=0
+        #if [ "$2" = "v1" ]; then
+        #    deb=1
+        #else
+        #    deb=0
+        #fi   
+        if [ ! -z "$2" ]; then
+            echo -e "\n>>> seed=$1; other args passed to script; output appended to $OUT"
+            nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "$@" & # pass all remaining arguments to script
+        else # use defaults
+            echo -e "\n>>> seed=$1, $nImp imputations, $nRun reps; output appended to $OUT"
+            nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "v$deb" "$testOn"&
+        fi
+
 fi
 
 #nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "m5" "r3" "j1" "deb" "xdeb" "test" &
@@ -63,7 +83,7 @@ fi
 #    #echo -e "extra debug!\n"
 #    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "v$deb" "xdeb" "$testOn"&
 #else
-nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "v$deb" "$testOn"&
+
 #fi
 
 echo -e "\n\n\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n" >> "$OUT"  
