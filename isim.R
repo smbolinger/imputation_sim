@@ -7,6 +7,7 @@ library(data.table)
 suppressMessages(library(mice))
 suppressMessages(library(tidyverse)) # look into tidytable for tidyverse syntax w/ data.table
 options(width=199)
+options(scipen=999) # discourage R from using scientific notation?
 ###### PARAMS & ARGS ###########################################################################
 params <- list(nrun=100,
 	       hdir="/home/wodehouse/Projects/fate_glm/",
@@ -23,6 +24,7 @@ params <- list(nrun=100,
                test=FALSE,
                seeds = NULL,
                # resp = NULL,
+               nNest=200,
                j = 50,
                m=20)
 arg <- commandArgs(trailingOnly=TRUE)
@@ -50,6 +52,7 @@ if(length(arg)==0){
           else if(a=="test") params$test <- TRUE
 	  else if(grepl("suff_\\w+", a)) params$suffix <- as.numeric(str_extract(a, "(?<=suff_)\\w+"))
 	  else if(grepl("aw\\d", a)) params$ampWt <- as.numeric(str_extract(a, "\\d"))
+	  else if(grepl("nn\\d", a)) params$nNest <- as.numeric(str_extract(a, "\\d+"))
 	  else if(grepl("j\\d+", a)) params$j <- as.numeric(str_extract(a, "\\d+"))
 	  else if(grepl("s\\d+", a)) params$seeds <- c(as.numeric(str_extract(a, "\\d+")))
 	  else if(grepl("m\\d+", a)) params$m <- as.numeric(str_extract(a, "\\d+"))
@@ -115,7 +118,8 @@ if(TRUE){
     cMat  <- readRDS('cormat.rds')
     fprob <- c( 'H'=0.53,'A'=0.1, 'D'=0.13,'F'=0.06, 'Hu'=0.13,'S'=0.06 )
     sprob <- c('CONI'=0.32, 'LETE'=0.68)
-    nnest <- ifelse(params$test==T, 200, 200) # number of simulated nests
+    #nnest <- ifelse(params$test==T, 200, 200) # number of simulated nests
+    nnest <- params$nNest
     mpatt  <- readRDS("misPatt.rds")
     awFile <- case_when(params$ampWt==1 ~ "ampWts.rds",
                         params$ampWt==2 ~ "ampWts2.rds",
@@ -268,7 +272,7 @@ for (seed in params$seeds){
             #}
             #varInfo <- array(NA, dim=c(length(camFateVars), params$nrun, length(mods4sim), length(resp_list)))
             if(params$test) cat(sprintf("\n\n::::::::::::::::::::::::::::::: ALL OUTPUT - RUN %s, MODEL %s:::::::::::::::::::::::::::::::\n\n",run,mod ))## *~*~*~*~*
-            if(params$test) qvcalc::indentPrint(res[,, run,,mod,])
+            if(params$test) qvcalc::indentPrint(round(res[,, run,,mod,],2))
             if(params$vbose>=1) cat("\n    >> cam fate vars for this run:\n")
             if(params$vbose>=1) qvcalc::indentPrint(table(datNA$cam_fate), indent=8)
             #if(params$deb) cat("\n>> species for this run:", table(datNA$speciesCONI))
@@ -285,7 +289,7 @@ for (seed in params$seeds){
         nowtime <- format(Sys.time(), "%H_%M")
         fname <- paste0(now_dir, sprintf("/vals_mod%s_seed%s_%s_%s.rds", mod, seed, nowtime, suffix))
         cat("\n ~ ~ ~ saving output to file:", fname)
-        saveRDS(res, fname)
+        saveRDS(round(res,3), fname)
 
         fnameV <- paste0(now_dir, sprintf("/camFate_mod%s_seed%s_%s_%s.rds", mod, seed, nowtime, suffix ))
         cat("\n ~ ~ ~ saving cam fate vars to file:", fnameV)

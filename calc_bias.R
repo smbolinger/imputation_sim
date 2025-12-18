@@ -2,7 +2,7 @@
 library(brglm2)
 library(tidyverse)
 library(gt)
-
+naRm <- TRUE
 options(width=100)
 source("imp_sim_functions.R")
 arg <- commandArgs(trailingOnly=TRUE)
@@ -164,13 +164,15 @@ for(z in seq_along(mods4sim)){
             #print(str(avg))
             cat("\n>>> storing vals to matrix\n")
             bias[v, ,"value",z,resp] <- avg[,"estimate"]
-            bias[v,,"bias",z,resp] <- avg[,"estimate"] - true
-            bias[v,,"pctBias",z,resp] <- 100 * abs((avg[,"estimate"] - true) / true )
+            #bias[v,,"bias",z,resp] <- avg[,"estimate"] - true
+            bias[v,,"bias",z,resp] <- rowMeans(impDat[v,,,"estimate",z,resp] - true, na.rm=naRm)
+            #bias[v,,"pctBias",z,resp] <- 100 * abs((avg[,"estimate"] - true) / true )
+            bias[v,,"pctBias",z,resp] <- 100 * abs(rowMeans((impDat[v,,,"estimate",z,resp] - true) / true , na.rm=naRm))
             #bias[v,,"pctBias",z,resp] <- 100 * abs(rowMeans((impDat[v,,,"estimate",] - true) / true ))
-            bias[v,,"covRate",z,resp] <- rowMeans(impDat[v,,,"2.5 %",z,resp] < true & true < impDat[v,,,"97.5 %",z,resp])
-            bias[v,,"avgWidth",z,resp] <- rowMeans(impDat[v,,,"97.5 %",z,resp] - impDat[v,,,"2.5 %",z,resp])
-            bias[v,,"RMSE",z,resp] <- sqrt((avg[,"estimate"] - true)^2)
-            #bias[v,,"RMSE",z,resp] <- 100 * sqrt((rowMeans(impDat[v,,,"estimate",]) - true) ^2 )
+            bias[v,,"covRate",z,resp] <- rowMeans(impDat[v,,,"2.5 %",z,resp] < true & true < impDat[v,,,"97.5 %",z,resp],na.rm=naRm)
+            bias[v,,"avgWidth",z,resp] <- rowMeans(impDat[v,,,"97.5 %",z,resp] - impDat[v,,,"2.5 %",z,resp], na.rm=naRm)
+            #bias[v,,"RMSE",z,resp] <- sqrt((avg[,"estimate"] - true)^2)
+            bias[v,,"RMSE",z,resp] <- 100 * sqrt(rowMeans((impDat[v,,,"estimate",z,resp] - true) ^2 ,na.rm=naRm))
             bias[v,,"SD",z,resp] <- sdev[,"estimate"]
 
             #if(params$debug) cat(sprintf("\nbias values for %s and model %s %s:\n\n", v, resp, mods4sim[z]))
