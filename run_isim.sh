@@ -6,7 +6,8 @@ if [ $# -eq 0 ]; then
     echo ">> Usage: $0 - [seed] [test | no] [other arguments passed to isim.R]"
     exit 1
 else
-    echo "argument(s) passed: $1 $2 $3"
+    #echo -e "\nargument(s) passed: $1 $2 $3"
+    echo -e "\nargument(s) passed to shell script: $@"
 fi
 #could read seed from file here instead, and then pass to R script:
 #seed=$(head -n 1 seed.flag)
@@ -25,16 +26,27 @@ if [ "$2" = "test" ]; then
     nImp=5
     nRun=3
     nSave=1
+    vb=2
+    for arg in "$@"; do
+        if [[ "$arg" =~ [v] ]]; then
+            #vb="$arg"
+            vb=${arg#*$"v"} # try to extract only the number (everything following v)
+            #echo -e "\n\t>>> PID: $! \t\t>>>>>> *VERBOSITY LEVEL*: $arg\n" # -e allows \n to be interpreted as newline
+        #else
+            #echo -e "\n\t>>> PID: $! \t\t>>>>>> *VERBOSITY LEVEL*: default (0)\n" # -e allows \n to be interpreted as newline
+        fi
+    done
     #ampWt=1
     #echo ">>> running as test; appending output to $TEST"
     #echo -e "\n>>> running as test; seed=$1, $nImp imputations, $nRun reps; appending output to $OUT"
-    deb=2
-    if [ ! -z "$3" ]; then
-        echo -e "\n>>> running as test with seed $1; other args passed to script; appending output to $OUT"
+    #deb=2
+    #if [ ! -z "$3" ]; then
+    if [ ! -z "$4" ]; then
+        echo -e "\n>>> running **AS TEST** with seed $1; other args passed to script: s$1, $testOn, $@; appending output to $OUT"
         nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "$testOn" "$@" & # pass all remaining arguments to script
     else # use defaults
-        echo -e "\n>>> running as test with $nRun runs, $nImp imputations, & seed $1; appending output to $OUT"
-        nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "v$deb" "$testOn"&
+        echo -e "\n>>> running **AS TEST** with $nRun runs, $nImp imputations, & seed $1; appending output to $OUT"
+        nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "suff_$suff" "aw$ampWt" "m$nImp" "r$nRun" "j$nSave" "v$vb" "$testOn"&
     fi
 
     #if [ "$3" = "v2" ]; then
@@ -56,14 +68,24 @@ else
         nRun=100
         nSave=100
         testOn=""
-        deb=0
+        #deb=0
         #if [ "$2" = "v1" ]; then
         #    deb=1
         #else
         #    deb=0
         #fi   
+        vb="default (0)"
+        for arg in "$@"; do
+            if [[ "$arg" =~ [v] ]]; then
+                #vb="$arg"
+                vb=${arg#*$"v"} # try to extract only the number (everything following v)
+                #echo -e "\n\t>>> PID: $! \t\t>>>>>> *VERBOSITY LEVEL*: $arg\n" # -e allows \n to be interpreted as newline
+            #else
+                #echo -e "\n\t>>> PID: $! \t\t>>>>>> *VERBOSITY LEVEL*: default (0)\n" # -e allows \n to be interpreted as newline
+            fi
+        done
         if [ ! -z "$2" ]; then
-            echo -e "\n>>> seed=$1; other args passed to script; output appended to $OUT"
+            echo -e "\n>>> seed=$1; other args passed to script: s$1, $@; output appended to $OUT"
             nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$OUT" 2>&1 "s$1" "$@" & # pass all remaining arguments to script
         else # use defaults
             echo -e "\n>>> seed=$1, $nImp imputations, $nRun reps; output appended to $OUT"
@@ -86,13 +108,19 @@ fi
 
 #fi
 
-echo -e "\n\n\n[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n" >> "$OUT"  
-echo -e "\tDATE: $DATE \t\tTIME: $NOW \t\tPID: $! \n" >> "$OUT"
-echo -e "\tFILE: $FILE\n" >> "$OUT"
-echo -e "[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n\n" >> "$OUT"  
+echo -e "\n\n\n[] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] []\n" >> "$OUT"  
+#echo -e "\tDATE: $DATE \t\tTIME: $NOW \t\tPID: $! \n" >> "$OUT"
+#echo -e "\tFILE: $FILE\n" >> "$OUT"
+echo -e "\tDATE: $DATE \t\tTIME: $NOW \t\tPID: $!\tFILE: $FILE\n" >> "$OUT"
+echo -e "[] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] [] []\n" >> "$OUT"  
+#echo -e "[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n\n" >> "$OUT"  
 
-echo -e "\n\t>>> PID: $! " # -e allows \n to be interpreted as newline
-echo -e "\t>>>>>> *VERBOSITY LEVEL*: $deb\n"
+#echo -e "\n\t>>> PID: $! \t\t>>>>>> *VERBOSITY LEVEL*: $deb\n" # -e allows \n to be interpreted as newline
+#vb=0
+
+#echo -e "\n\t>>> PID: $! \t\t>>>>>> *VERBOSITY LEVEL*: $deb\n" # -e allows \n to be interpreted as newline
+echo -e "\n\t>>> PID: $! \t\t>>>>>> *VERBOSITY LEVEL*: $vb\n" # -e allows \n to be interpreted as newline
+#echo -e "\t>>>>>> *VERBOSITY LEVEL*: $deb\n"
 # use flag file if you want something to run only once per day (like printing DATE)
 #echo "$DATE" > isim_flag.out
 #if [ "$1"="HF_mis" ]; then
