@@ -1,0 +1,7 @@
+
+varInfo <- array(NA, dim=c(length(camFateVars), params$nrun, length(mods4sim))) # keep a count of sample size for each category
+dimnames(varInfo) <- list( camFateVars, seq(1,params$nrun), mods4sim)
+
+res <- array(NA, dim = c(length(vars), length(mets)+2, params$nrun, 3, length(mods4sim), length(resp_list)))
+dimnames(res) <- list(vars, c(mets, "sim", "true"), 1:params$nrun, c("estimate", "2.5 %","97.5 %"), names(mods4sim), resp_list)
+

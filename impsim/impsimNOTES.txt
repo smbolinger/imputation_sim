@@ -1,0 +1,6 @@
+
+When the values for >1 method are equal, most likely it's because the
+imputation didn't work for those methods...
+
+Could record to file every time the dims don't match for the matrix 
+multiplication, just to have a record.
