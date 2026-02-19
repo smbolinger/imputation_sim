@@ -8,6 +8,7 @@
 /logs
 /old
 /impsim
+/simdat/old
 
 # History files
 .Rhistory
