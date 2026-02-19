@@ -17,7 +17,8 @@ fi
 #date=$(date +'%d-%b')
 date=$(date +'%d%b')
 now=$(date +'%H:%M:%S')
-FILE="/home/wodehouse/Projects/fate_glm/isim.R"
+# FILE="/home/wodehouse/Projects/fate_glm/isim.R"
+FILE="/home/wodehouse/Projects/imputation_sim/isim.R"
 # this was Wodehoues: cxf
 #OUT="${1}${2}.out" # brackets (string concatenation) to prevent '.out' being interpreted as part of var name
 
@@ -63,7 +64,7 @@ simul() {
     #nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$outf" 2>&1 $seed aw3 j1 v$vb $testOn "${argList[@]}" &
 
     #nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$outf" 2>&1 "${argList[@]}" &
-    nohup Rscript /home/wodehouse/Projects/fate_glm/isim.R >> "$outf" 2>&1 "${argList[@]}" 
+    nohup Rscript /home/wodehouse/Projects/imputation_sim/isim.R >> "$outf" 2>&1 "${argList[@]}" 
 }
 
 calcb() {
@@ -72,14 +73,15 @@ calcb() {
     local vb="$3"
     local biasOut="$4"
 
-    nohup Rscript /home/wodehouse/Projects/fate_glm/calc_bias.R >> "$biasOut" 2>&1 "$modDir" "$nrun" "$vb"
+    nohup Rscript /home/wodehouse/Projects/imputation_sim/calc_bias.R >> "$biasOut" 2>&1 "$modDir" "$nrun" "$vb"
 }
 
 # ----------------------------------------------------------------------------------
 # 2: default values:
 # ----------------------------------------------------------------------------------
-out="test-${1}.out" # why is test the default?
-biasOut="tbias-${1}.out"
+# out="test-${1}.out" # why is test the default?
+out="logs/test-${1}.out" # why is test the default?
+biasOut="logs/tbias-${1}.out"
 mdir="t-${date}"
 seed="s$1"
 ampWt="aw3"
@@ -108,9 +110,11 @@ if [ "$testOn" = "test" ]; then
         fi
     done
 
-    if [ ! -z "$4" ]; then
+    # if [ ! -z "$4" && "$4" !=~ [v] ]; then # if arg 4 exists & does not contain 'v'
+    if [ ! -z "$3" && "$3" !=~ [v] ]; then # if arg 4 exists & does not contain 'v'
         #simul && calcb
         # do I need to declare argList as local? only if repeating the command?
+        # if [[ "$4" =~ [v] ]] # if arg 4 contains 'v'
         argList=("${@:2}") #  start @ arg 2
         #argList+=("$seed")
         def="CLI"
@@ -131,8 +135,8 @@ if [ "$testOn" = "test" ]; then
 else
     ###### Default vals for non-test: ##########################################################################
     #can prob move them out of the else statement
-    out="${1}.out" # why is test the default?
-    biasOut="bias-${1}.out"
+    out="logs/${1}.out" # why is test the default?
+    biasOut="logs/bias-${1}.out"
     mdir="${date}"
     nImp="m25"
     nRun="r100"
