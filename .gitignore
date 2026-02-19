@@ -3,6 +3,7 @@
 *.out
 
 # Directories
+/renv
 /out
 /figs
 /logs
