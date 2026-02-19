@@ -12,6 +12,7 @@ debugging <- FALSE # for uickly setting values when working in the file with the
 ######  RANDOM FUNCTIONS ################################################################
 ########################################################################################
 
+num_cols <- c("nest_age", "obs_int", "fdate")
 means <- function(realDat) sapply(realDat[,c(8:10)], mean)
 fitReal <- function(resp, dataMod, modlist, iter=500){
   mods <- list()
@@ -129,10 +130,130 @@ add_fact <- function(dat, facToNum=FALSE, vb=0){
 }
 
 ########################################################################################
-##### MAKE SIMULATED DATA ###############################################################
+###### MAKE SIMULATED DATA ###################################################################
 ########################################################################################
 
-mkSimDat <- function(seeed, nd, mpatt, wts, new_prop=0.2, patt_freq=c(0.45,0.45,0.1),wt=TRUE, test=FALSE, convFact=FALSE, facToNum=FALSE,vbose=0){
+
+
+#mkResp <- function(sDat, betas, form, debug=FALSE, xdebug=FALSE){
+#mkResp <- function(resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE, xdebug=FALSE){
+#mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE, xdebug=FALSE, mindebug=FALSE){
+mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, strat=TRUE, vbose=0){
+    #dummySim <- as.data.table(model.matrix(form, data = sDat))
+    #tryCatch(
+    
+    set.seed(seed=seed)
+    success <- FALSE
+    # 1. test whether dimensions match (for matrix multiplication) 
+    while(!success){
+        #sDat <- mkSim(s_size, cMat, mList, betas, fprob, sprob, debug=debug, xdebug=xdebug)
+        sDat <- mkSim(s_size, cMat, mList, betas, fprob, sprob, stratify=strat, vb=vbose)
+        form <- as.formula(mod)
+        dummySim <- model.matrix(form, data = sDat)
+        #success <- dim(dummySim)[2]==dim(betas)[1]
+        success <- dim(dummySim)[2]==length(betas[[1]]) & dim(dummySim)[2]==length(betas[[2]])
+        #cat("success?", success)
+    }
+    # 2. pass betas to respMatMul for each response variable separately:
+    # sDat[,is_u := respMatMul(dummySim, betas[[1]])]
+    # sDat[,HF_mis := respMatMul(dummySim, betas[[2]])]
+    sDat[,is_u := respMatMul("is_u",dummySim, betas[[1]], vb=vbose)]
+    sDat[,HF_mis := respMatMul("HF_mis",dummySim, betas[[2]], vb=vbose)]
+    # make response variables into factors:
+    sDat[,is_u := as.factor(sDat[,is_u])]
+    sDat[,HF_mis := as.factor(sDat[,HF_mis])]
+    #cat("\n>> created response vars:")
+    #print(sDat[,HF_mis])
+    #print(sDat[,is_u])
+    return(sDat)
+}
+
+respMatMul <- function( dummySim, betas, vb=0){
+    #if(vb>=1) cat("\n***MATRIX MULTIPLICATION***", dim(dummySim), dim(betas))
+    eta <- dummySim %*% betas 
+    y <- rbinom(nrow(dummySim), size = 1, prob = binomial()$linkinv(eta)) # The outcome    
+    return(y)
+}
+
+#mkSim <- function( s_size, cMat, mList, betas,fprob, sprob, stratify=TRUE, debug=FALSE, xdebug=FALSE, mindebug=FALSE){
+mkSim <- function( s_size, cMat, mList, betas,fprob, sprob, stratify=TRUE, vb=0){
+    fates <- names(fprob) # create variable for camera fates
+    spp   <- names(sprob) # create variable for species names
+    #if(debug) cat("\nfates:", fates, "& species:", spp) # ~*~*~*
+    # if(debug){ # ~*~*~*
+    #     cat("\ncoefficients, class:\n", class(betas))
+    #     print(betas)
+    # }
+    simDat <- list()
+    if(stratify){
+        for (s in seq_along(spp)){
+            sp <- spp[s]
+            # cat("\n>>> species:", sp, "\t& means:", mList[[sp]], "\t& correlation matrix:\n") # ~*~*~*
+            # print(cMat[[sp]])
+            simDat[[sp]] <- as.data.table(MASS::mvrnorm(n=round(s_size*sprob[s]), mu=mList[[sp]], Sigma=cMat[[sp]]))
+            #cat("\n>> adding camera fates\n") # ~*~*~*
+            simDat[[sp]][,cam_fate := sample(fates, size=nrow(simDat[[sp]]), replace=T, prob=fprob)]
+        }
+        #cat("\n>>> created sim data") # ~*~*~*
+        names(simDat) <- c("CONI", "LETE")
+        sDat <- data.table::rbindlist(simDat, idcol="species", use.names=T, fill=T)
+        #cat(" - merged sim data for the two species") # ~*~*~*
+    }
+    else {
+        cMat <- readRDS("cmat_all.rds")
+        mList <- readRDS("mlist_all.rds")
+        sDat <- as.data.table(MASS::mvrnorm(n=s_size, mu=mList, Sigma=cMat))
+        sDat[,species := sample(spp, size=nrow(sDat), replace=T, prob=sprob)]
+        sDat[,cam_fate := sample(fates, size=nrow(sDat), replace=T, prob=fprob)]
+    }
+    sDat[,cam_fate := relevel(as.factor(sDat[,cam_fate]), ref="H")]
+    sDat[,species  := relevel(as.factor(sDat[,species] ), ref="LETE")]
+    return(sDat)
+    #cat(" - releved factors") # ~*~*~*
+    #form <- as.formula(mod)
+    # if(xdebug) cat("\n>>>>> simulated data frame w/o dummy variables:\n") # ~*~*~*
+    # if(xdebug) print(sDat)
+
+    #dummySim <- model.matrix(form, data = sDat)
+    #if(dim(dummySim)[2]==dim(betas)[1]) {
+    #    sDat[,is_u := mkResp(sDat, (betas[[1]]), form, debug=debug )]
+    #    sDat[,HF_mis := mkResp(sDat, (betas[[2]]), form, debug=debug )]
+    #}else{
+    #}
+
+    #cat(' - added response variables\n') # ~*~*~*
+    #for (r in seq_along(resp_list)){
+    #    #resp <- mkResp(sDat, betas, form, debug=debug)
+    #    sDat[,resp_list[r] := mkResp(sDat, betas[[r]], form, debug=debug)]
+    #}
+
+    #dummySim <- model.matrix(form, data = sDat)
+    #if(debug) cat("\ndesign matrix, class:\n", str(dummySim))
+    #if(debug) print(dummySim)
+    #eta <- dummySim %*% betas
+    #if(debug) cat("\nmultiplied by beta values:\n")
+    #print(eta)
+    #y <- rbinom(nrow(dummySim), size = 1, prob = binomial()$linkinv(eta)) # The outcome    
+    #sDat[,is_u := y]
+    #sDat[,is_u := resp]
+    # if(xdebug){ # ~*~*~*
+    #     fitReal2 <- summary(glm(is_u ~ nest_age * species + obs_int + cam_fate + fdate,
+    #                        family=binomial,
+    #                        data=sDat,
+    #                        method=brglm2::brglmFit))
+    #     cat("\n>>>> model fit for simulated data:\n")
+    #     print(fitReal2)
+    # }
+    #return(sDat)
+}
+
+########################################################################################
+##### MAKE AMPUTED DATA ###############################################################
+########################################################################################
+
+# mkSimDat <- function(seeed, nd, mpatt, wts, new_prop=0.2, patt_freq=c(0.45,0.45,0.1),wt=TRUE, test=FALSE, convFact=FALSE, facToNum=FALSE,vbose=0){
+mkAmpDat <- function(seeed, nd, mpatt, wts, new_prop=0.2, patt_freq=c(0.45,0.45,0.1),wt=TRUE, test=FALSE, convFact=FALSE, facToNum=FALSE,vbose=0){
+    # if(vbose>=1) cat("\n    <><><><><><><><><><><> MAKE AMPUTED DATA: <><><><><><><><><><><><><><><><><><><>")
   #cat("mkSimDat seed=", seeed, class(seeed))
     dat4amp <- add_dummy(nd, vb=0)
     no_miss <- c("obs_int", "fdate", "is_u", "speciesCONI")
@@ -307,122 +428,6 @@ visImp <- function(imp){
     print(cplot)
 
 
-}
-
-########################################################################################
-###### MAKE SIMULATED DATA ###################################################################
-########################################################################################
-
-
-
-#mkResp <- function(sDat, betas, form, debug=FALSE, xdebug=FALSE){
-#mkResp <- function(resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE, xdebug=FALSE){
-#mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, debug=FALSE, xdebug=FALSE, mindebug=FALSE){
-mkResp <- function(seed, resp_list, mod, s_size, cMat, mList, betas,fprob, sprob, prList, vbose=0){
-    #dummySim <- as.data.table(model.matrix(form, data = sDat))
-    #tryCatch(
-    
-    set.seed(seed=seed)
-    success <- FALSE
-    # 1. test whether dimensions match (for matrix multiplication) 
-    while(!success){
-        #sDat <- mkSim(s_size, cMat, mList, betas, fprob, sprob, debug=debug, xdebug=xdebug)
-        sDat <- mkSim(s_size, cMat, mList, betas, fprob, sprob, vb=vbose)
-        form <- as.formula(mod)
-        dummySim <- model.matrix(form, data = sDat)
-        #success <- dim(dummySim)[2]==dim(betas)[1]
-        success <- dim(dummySim)[2]==length(betas[[1]]) & dim(dummySim)[2]==length(betas[[2]])
-        #cat("success?", success)
-    }
-    # 2. pass betas to respMatMul for each response variable separately:
-    sDat[,is_u := respMatMul(dummySim, betas[[1]])]
-    sDat[,HF_mis := respMatMul(dummySim, betas[[2]])]
-    # make response variables into factors:
-    sDat[,is_u := as.factor(sDat[,is_u])]
-    sDat[,HF_mis := as.factor(sDat[,HF_mis])]
-    #cat("\n>> created response vars:")
-    #print(sDat[,HF_mis])
-    #print(sDat[,is_u])
-    return(sDat)
-}
-
-respMatMul <- function( dummySim, betas, vb=0){
-    #if(vb>=1) cat("\n***MATRIX MULTIPLICATION***", dim(dummySim), dim(betas))
-    eta <- dummySim %*% betas 
-    y <- rbinom(nrow(dummySim), size = 1, prob = binomial()$linkinv(eta)) # The outcome    
-    return(y)
-}
-
-#mkSim <- function( s_size, cMat, mList, betas,fprob, sprob, stratify=TRUE, debug=FALSE, xdebug=FALSE, mindebug=FALSE){
-mkSim <- function( s_size, cMat, mList, betas,fprob, sprob, stratify=TRUE, vb=0){
-    fates <- names(fprob)
-    spp   <- names(sprob)
-    #if(debug) cat("\nfates:", fates, "& species:", spp) # ~*~*~*
-    # if(debug){ # ~*~*~*
-    #     cat("\ncoefficients, class:\n", class(betas))
-    #     print(betas)
-    # }
-    simDat <- list()
-    if(stratify){
-        for (s in seq_along(spp)){
-            sp <- spp[s]
-            # cat("\n>>> species:", sp, "\t& means:", mList[[sp]], "\t& correlation matrix:\n") # ~*~*~*
-            # print(cMat[[sp]])
-            simDat[[sp]] <- as.data.table(MASS::mvrnorm(n=round(s_size*sprob[s]), mu=mList[[sp]], Sigma=cMat[[sp]]))
-            #cat("\n>> adding camera fates\n") # ~*~*~*
-            simDat[[sp]][,cam_fate := sample(fates, size=nrow(simDat[[sp]]), replace=T, prob=fprob)]
-        }
-        #cat("\n>>> created sim data") # ~*~*~*
-        names(simDat) <- c("CONI", "LETE")
-        sDat <- data.table::rbindlist(simDat, idcol="species", use.names=T, fill=T)
-        #cat(" - merged sim data for the two species") # ~*~*~*
-    }
-    else {
-        cMat <- readRDS("cmat_all.rds")
-        mList <- readRDS("mlist_all.rds")
-        sDat <- as.data.table(MASS::mvrnorm(n=s_size, mu=mList, Sigma=cMat))
-        sDat[,species := sample(spp, size=nrow(sDat), replace=T, prob=sprob)]
-        sDat[,cam_fate := sample(fates, size=nrow(sDat), replace=T, prob=fprob)]
-    }
-    sDat[,cam_fate := relevel(as.factor(sDat[,cam_fate]), ref="H")]
-    sDat[,species  := relevel(as.factor(sDat[,species] ), ref="LETE")]
-    return(sDat)
-    #cat(" - releved factors") # ~*~*~*
-    #form <- as.formula(mod)
-    # if(xdebug) cat("\n>>>>> simulated data frame w/o dummy variables:\n") # ~*~*~*
-    # if(xdebug) print(sDat)
-
-    #dummySim <- model.matrix(form, data = sDat)
-    #if(dim(dummySim)[2]==dim(betas)[1]) {
-    #    sDat[,is_u := mkResp(sDat, (betas[[1]]), form, debug=debug )]
-    #    sDat[,HF_mis := mkResp(sDat, (betas[[2]]), form, debug=debug )]
-    #}else{
-    #}
-
-    #cat(' - added response variables\n') # ~*~*~*
-    #for (r in seq_along(resp_list)){
-    #    #resp <- mkResp(sDat, betas, form, debug=debug)
-    #    sDat[,resp_list[r] := mkResp(sDat, betas[[r]], form, debug=debug)]
-    #}
-
-    #dummySim <- model.matrix(form, data = sDat)
-    #if(debug) cat("\ndesign matrix, class:\n", str(dummySim))
-    #if(debug) print(dummySim)
-    #eta <- dummySim %*% betas
-    #if(debug) cat("\nmultiplied by beta values:\n")
-    #print(eta)
-    #y <- rbinom(nrow(dummySim), size = 1, prob = binomial()$linkinv(eta)) # The outcome    
-    #sDat[,is_u := y]
-    #sDat[,is_u := resp]
-    # if(xdebug){ # ~*~*~*
-    #     fitReal2 <- summary(glm(is_u ~ nest_age * species + obs_int + cam_fate + fdate,
-    #                        family=binomial,
-    #                        data=sDat,
-    #                        method=brglm2::brglmFit))
-    #     cat("\n>>>> model fit for simulated data:\n")
-    #     print(fitReal2)
-    # }
-    #return(sDat)
 }
 
 ########################################################################################
